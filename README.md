@@ -4,6 +4,8 @@
 [![Version](https://img.shields.io/jetbrains/plugin/v/27119.svg)](https://plugins.jetbrains.com/plugin/27119)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/27119.svg)](https://plugins.jetbrains.com/plugin/27119)
 
+<img src="https://raw.githubusercontent.com/xenforo-ltd/xenforo-query/main/src/main/resources/META-INF/pluginIcon.svg" width="256" height="256" alt="XenForo Query" />
+
 <!-- Plugin description -->
 The XenForo Query plugin provides assistance for writing database queries within XenForo PHP projects using PhpStorm.
 
