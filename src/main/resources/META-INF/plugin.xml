@@ -10,7 +10,10 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <completion.contributor
-            language="PHP"
-            implementationClass="com.github.xenforo.query.completion.QueryCompletionContributor"/>
+                language="PHP"
+                implementationClass="com.github.xenforo.query.completion.ColumnCompletionContributor"/>
+        <completion.contributor
+                language="PHP"
+                implementationClass="com.github.xenforo.query.completion.TableCompletionContributor"/>
     </extensions>
 </idea-plugin>
