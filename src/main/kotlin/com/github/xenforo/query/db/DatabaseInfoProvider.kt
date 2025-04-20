@@ -10,7 +10,7 @@ import com.intellij.util.containers.JBIterable
 
 class DatabaseInfoProvider(private val project: Project)
 {
-	private val LOG = Logger.getInstance(DatabaseInfoProvider::class.java)
+	private val _log = Logger.getInstance(DatabaseInfoProvider::class.java)
 
 	private val systemSchemaNames =
 		setOf(
@@ -28,16 +28,16 @@ class DatabaseInfoProvider(private val project: Project)
 		val tables = mutableListOf<DasTable>()
 		val dataSources = dbPsiFacade.dataSources
 
-		if (LOG.isDebugEnabled)
+		if (_log.isDebugEnabled)
 		{
-			LOG.debug("Found ${dataSources.size} data sources")
+			_log.debug("Found ${dataSources.size} data sources")
 		}
 
 		for (dataSource in dataSources)
 		{
-			if (LOG.isDebugEnabled)
+			if (_log.isDebugEnabled)
 			{
-				LOG.debug("Processing data source: ${dataSource.name}")
+				_log.debug("Processing data source: ${dataSource.name}")
 			}
 			val dbTables: JBIterable<out DasTable> =
 				DasUtil.getTables(dataSource)
@@ -49,16 +49,16 @@ class DatabaseInfoProvider(private val project: Project)
 
 				if (schemaName != null && systemSchemaNames.contains(schemaName))
 				{
-					if (LOG.isDebugEnabled)
+					if (_log.isDebugEnabled)
 					{
-						LOG.debug("Skipping table in system schema: ${table.name} (schema: $schemaName)")
+						_log.debug("Skipping table in system schema: ${table.name} (schema: $schemaName)")
 					}
 					continue
 				}
 
-				if (LOG.isDebugEnabled)
+				if (_log.isDebugEnabled)
 				{
-					LOG.debug("Found user table: ${table.name} (schema: $schemaName)")
+					_log.debug("Found user table: ${table.name} (schema: $schemaName)")
 				}
 				tables.add(table)
 			}
