@@ -1,15 +1,17 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.chrisdeeming.xenforoquery</id>
-    <name>xenforo-query</name>
-    <vendor>chrisdeeming</vendor>
+    <id>com.github.xenforo.query</id>
+    <name>Query</name>
+    <vendor>xenforo</vendor>
 
     <depends>com.intellij.modules.platform</depends>
-
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <depends>com.jetbrains.php</depends>
+    <depends>com.intellij.database</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.chrisdeeming.xenforoquery.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.chrisdeeming.xenforoquery.startup.MyProjectActivity" />
+        <!--suppress PluginXmlValidity -->
+        <completion.contributor
+            language="PHP"
+            implementationClass="com.github.xenforo.query.completion.QueryCompletionContributor"/>
     </extensions>
 </idea-plugin>
