@@ -4,9 +4,11 @@
 [![Version](https://img.shields.io/jetbrains/plugin/v/27119.svg)](https://plugins.jetbrains.com/plugin/27119)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/27119.svg)](https://plugins.jetbrains.com/plugin/27119)
 
+<!-- Plugin description -->
 The XenForo Query plugin provides assistance for writing database queries within XenForo PHP projects using PhpStorm.
 
 Currently, the plugin offers completion suggestions for database table names when using the `\XF::query('')` method. It integrates with your IDE's configured database connections to provide relevant table names.
+<!-- Plugin description end -->
 
 ## Installation
 
