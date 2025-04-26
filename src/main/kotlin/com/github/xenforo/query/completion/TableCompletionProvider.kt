@@ -45,7 +45,7 @@ class TableCompletionProvider : CompletionProvider<CompletionParameters>()
 	private fun isTableAcceptingMethod(methodName: String): Boolean
 	{
 		return methodName in listOf(
-			"query", "from"
+			"query", "table"
 		)
 	}
 
@@ -53,21 +53,25 @@ class TableCompletionProvider : CompletionProvider<CompletionParameters>()
 	{
 		ProgressManager.checkCanceled()
 
-		DbUtil.getDataSources(project)
-			.asSequence()
-			.flatMap { dataSource ->
-				DasUtil.getSchemas(dataSource)
-					.filter { schema -> !systemSchemas.contains(schema.name.lowercase()) }
-					.flatMap { schema ->
-						DasUtil.getTables(dataSource)
-							.filter { table -> !table.isSystem }
-					}
-			}
-			.distinctBy { it.name }
-			.sortedBy { it.name }
-			.forEach { table ->
-				ProgressManager.checkCanceled()
-				result.addElement(LookupBuilder.forTable(table, project))
-			}
+		val tables = LookupBuilder.getCachedTables(project) {
+			DbUtil.getDataSources(project)
+				.asSequence()
+				.flatMap { dataSource ->
+					DasUtil.getSchemas(dataSource)
+						.filter { schema -> !systemSchemas.contains(schema.name.lowercase()) }
+						.flatMap { schema ->
+							DasUtil.getTables(dataSource)
+								.filter { table -> !table.isSystem }
+						}
+				}
+				.distinctBy { it.name }
+				.sortedBy { it.name }
+				.toList()
+		}
+
+		tables.forEach { table ->
+			ProgressManager.checkCanceled()
+			result.addElement(LookupBuilder.forTable(table, project))
+		}
 	}
 }

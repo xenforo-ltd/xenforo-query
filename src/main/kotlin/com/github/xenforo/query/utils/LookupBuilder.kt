@@ -6,7 +6,10 @@ import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.database.model.DasColumn
 import com.intellij.database.model.DasTable
 import com.intellij.openapi.project.Project
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
 import com.intellij.sql.symbols.DasPsiWrappingSymbol
+import com.intellij.openapi.roots.ProjectRootModificationTracker
 
 object LookupBuilder
 {
@@ -44,5 +47,29 @@ object LookupBuilder
 			)
 
 		return PrioritizedLookupElement.withPriority(builder, COLUMN_PRIORITY)
+	}
+
+	fun getCachedTables(project: Project, fetchTables: () -> List<DasTable>): List<DasTable>
+	{
+		val manager = CachedValuesManager.getManager(project)
+		return manager.getCachedValue(project)
+		{
+			CachedValueProvider.Result.create(
+				fetchTables(),
+				ProjectRootModificationTracker.getInstance(project)
+			)
+		}
+	}
+
+	fun getCachedColumns(project: Project, table: DasTable, fetchColumns: () -> List<DasColumn>): List<DasColumn>
+	{
+		val manager = CachedValuesManager.getManager(project)
+		return manager.getCachedValue(project)
+		{
+			CachedValueProvider.Result.create(
+				fetchColumns(),
+				ProjectRootModificationTracker.getInstance(project)
+			)
+		}
 	}
 }

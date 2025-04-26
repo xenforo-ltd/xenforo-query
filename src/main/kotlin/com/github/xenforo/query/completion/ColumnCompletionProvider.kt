@@ -6,6 +6,7 @@ import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionProvider
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.database.util.DasUtil
+import com.intellij.database.util.DbUtil
 import com.intellij.util.ProcessingContext
 import com.jetbrains.php.lang.psi.elements.MethodReference
 
@@ -21,7 +22,6 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
 	{
 		val position = parameters.position
 		val method = resolveMethodReference(position) ?: return
-
 		val methodName = method.name ?: return
 
 		if (!isColumnAcceptingMethod(methodName))
@@ -35,23 +35,21 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
 
 		val project = parameters.position.project
 
-		val dataSources = com.intellij.database.util.DbUtil.getDataSources(project)
-
-		val tables = dataSources.asSequence()
-			.flatMap { dataSource ->
-				DasUtil.getTables(dataSource)
-			}
-			.filter { it.name.equals(tableName, ignoreCase = true) }
-			.toList()
-
-		if (tables.isEmpty())
+		val tables = LookupBuilder.getCachedTables(project)
 		{
-			return
+			DbUtil.getDataSources(project)
+				.asSequence()
+				.flatMap { dataSource ->
+					DasUtil.getTables(dataSource)
+				}
+				.toList()
 		}
 
-		val table = tables.first()
+		val table = tables.firstOrNull { it.name.equals(tableName, ignoreCase = true) } ?: return
 
-		val columns = DasUtil.getColumns(table)
+		val columns = LookupBuilder.getCachedColumns(project, table) {
+			DasUtil.getColumns(table).toList()
+		}
 
 		for (column in columns)
 		{
