@@ -1,8 +1,8 @@
 package com.github.xenforo.query.completion
 
-import com.github.xenforo.query.model.DbReferenceExpression
+import com.github.xenforo.query.constants.BuilderMethods
 import com.github.xenforo.query.utils.LookupBuilder
-import com.github.xenforo.query.utils.MethodUtils.resolveMethodReference
+import com.github.xenforo.query.utils.QueryChainResolver
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionProvider
 import com.intellij.codeInsight.completion.CompletionResultSet
@@ -26,7 +26,7 @@ class TableCompletionProvider : CompletionProvider<CompletionParameters>()
 		result: CompletionResultSet,
 	)
 	{
-		val method = resolveMethodReference(parameters.position) ?: return
+		val method = QueryChainResolver.findMethodReference(parameters.position) ?: return
 		val methodName = method.name ?: return
 
 		if (!isTableAcceptingMethod(methodName))
@@ -35,21 +35,18 @@ class TableCompletionProvider : CompletionProvider<CompletionParameters>()
 		}
 
 		val project = parameters.position.project
-		val reference = DbReferenceExpression(parameters.position)
 
 		ApplicationManager.getApplication().runReadAction {
-			populateCompletions(project, reference, result)
+			populateCompletions(project, result)
 		}
 	}
 
 	private fun isTableAcceptingMethod(methodName: String): Boolean
 	{
-		return methodName in listOf(
-			"query", "table"
-		)
+		return BuilderMethods.TableMethods.contains(methodName)
 	}
 
-	private fun populateCompletions(project: Project, reference: DbReferenceExpression, result: CompletionResultSet)
+	private fun populateCompletions(project: Project, result: CompletionResultSet)
 	{
 		ProgressManager.checkCanceled()
 

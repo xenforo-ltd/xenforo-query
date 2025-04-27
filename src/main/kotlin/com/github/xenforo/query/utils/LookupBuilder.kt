@@ -5,11 +5,13 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.database.model.DasColumn
 import com.intellij.database.model.DasTable
+import com.intellij.database.util.DbUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
+import com.intellij.psi.util.CachedValue
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.sql.symbols.DasPsiWrappingSymbol
-import com.intellij.openapi.roots.ProjectRootModificationTracker
 
 object LookupBuilder
 {
@@ -52,24 +54,28 @@ object LookupBuilder
 	fun getCachedTables(project: Project, fetchTables: () -> List<DasTable>): List<DasTable>
 	{
 		val manager = CachedValuesManager.getManager(project)
-		return manager.getCachedValue(project)
-		{
+		val key = Key.create<CachedValue<List<DasTable>>>("com.github.xenforo.query.CACHED_TABLES")
+		val provider = CachedValueProvider {
 			CachedValueProvider.Result.create(
 				fetchTables(),
-				ProjectRootModificationTracker.getInstance(project)
+				DbUtil.getDataSources(project).mapNotNull { it.modificationTracker }
 			)
 		}
+		return manager.getCachedValue(project, key, provider, false)
 	}
 
-	fun getCachedColumns(project: Project, table: DasTable, fetchColumns: () -> List<DasColumn>): List<DasColumn>
+	fun getCachedColumns(project: Project, tableName: String, fetchColumns: () -> List<DasColumn>): List<DasColumn>
 	{
 		val manager = CachedValuesManager.getManager(project)
-		return manager.getCachedValue(project)
-		{
+		val mapKey =
+			Key.create<CachedValue<Map<String, List<DasColumn>>>>("com.github.xenforo.query.CACHED_COLUMNS_$tableName")
+		val provider = CachedValueProvider {
 			CachedValueProvider.Result.create(
-				fetchColumns(),
-				ProjectRootModificationTracker.getInstance(project)
+				mapOf(tableName to fetchColumns()),
+				DbUtil.getDataSources(project).mapNotNull { it.modificationTracker }
 			)
 		}
+		val cachedMap = manager.getCachedValue(project, mapKey, provider, false)
+		return cachedMap[tableName] ?: emptyList()
 	}
 }
