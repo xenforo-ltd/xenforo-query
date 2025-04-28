@@ -15,5 +15,6 @@
         <completion.contributor
                 language="PHP"
                 implementationClass="com.github.xenforo.query.completion.TableCompletionContributor"/>
+        <languageInjector implementation="com.github.xenforo.query.injector.SqlInjector"/>
     </extensions>
 </idea-plugin>
