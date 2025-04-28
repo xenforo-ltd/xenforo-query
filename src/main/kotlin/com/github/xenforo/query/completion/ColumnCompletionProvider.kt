@@ -23,13 +23,17 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
 		val method = QueryChainResolver.findMethodReference(position) ?: return
 		val methodName = method.name ?: return
 
-		if (!isColumnAcceptingMethod(methodName))
+		if (!isColumnAcceptingMethod(methodName) && !isMethodAcceptingColumnArguments(methodName))
 		{
 			return
 		}
 
 		val tableContexts = QueryChainResolver.resolveTables(method)
-		if (tableContexts.isEmpty()) return
+
+		if (tableContexts.isEmpty())
+		{
+			return
+		}
 
 		val project = position.project
 
@@ -48,7 +52,8 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
 					DasUtil.getColumns(table).toList()
 				}
 				columns.forEach { column ->
-					result.addElement(LookupBuilder.forColumn(column, project, tableContext.alias))
+					val lookupElement = LookupBuilder.forColumn(column, project, tableContext.alias)
+					result.addElement(lookupElement)
 				}
 			}
 		}
@@ -57,5 +62,10 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
 	private fun isColumnAcceptingMethod(methodName: String): Boolean
 	{
 		return BuilderMethods.ColumnMethods.contains(methodName)
+	}
+
+	private fun isMethodAcceptingColumnArguments(methodName: String): Boolean
+	{
+		return BuilderMethods.TableMethods.filter { it.endsWith("join", true) }.contains(methodName)
 	}
 }
