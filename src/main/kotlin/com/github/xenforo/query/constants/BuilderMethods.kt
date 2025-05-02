@@ -13,4 +13,8 @@ object BuilderMethods
 		"groupBy", "orderBy", "orderByDesc",
 		"find", "having", "orHaving",
 	)
+
+	val ColumnArrayMethods = listOf(
+		"insert", "insertOrIgnore", "insertGetId", "upsert", "update"
+	)
 }

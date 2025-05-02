@@ -23,7 +23,18 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
 		val method = QueryChainResolver.findMethodReference(position) ?: return
 		val methodName = method.name ?: return
 
-		if (!isColumnAcceptingMethod(methodName) && !isMethodAcceptingColumnArguments(methodName))
+		if (BuilderMethods.ColumnArrayMethods.contains(methodName)
+			&& !QueryChainResolver.isStringLiteralArrayKeyInColumnArray(position)
+		)
+		{
+			return
+		}
+
+		if (
+			!isColumnAcceptingMethod(methodName) &&
+			!isMethodAcceptingColumnArguments(methodName) &&
+			!isColumnArrayMethod(methodName)
+		)
 		{
 			return
 		}
@@ -67,5 +78,10 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
 	private fun isMethodAcceptingColumnArguments(methodName: String): Boolean
 	{
 		return BuilderMethods.TableMethods.filter { it.endsWith("join", true) }.contains(methodName)
+	}
+
+	private fun isColumnArrayMethod(methodName: String): Boolean
+	{
+		return BuilderMethods.ColumnArrayMethods.contains(methodName)
 	}
 }
