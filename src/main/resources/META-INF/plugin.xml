@@ -16,5 +16,9 @@
                 language="PHP"
                 implementationClass="com.github.xenforo.query.completion.TableCompletionContributor"/>
         <languageInjector implementation="com.github.xenforo.query.injector.SqlInjector"/>
+
+        <psi.referenceContributor
+                language="PHP"
+                implementation="com.github.xenforo.query.reference.ColumnReferenceContributor"/>
     </extensions>
 </idea-plugin>

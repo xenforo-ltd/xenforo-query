@@ -1,12 +1,11 @@
 package com.github.xenforo.query.utils
 
-import com.github.xenforo.query.constants.BuilderMethods
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
-import com.jetbrains.php.lang.psi.elements.ArrayCreationExpression
 import com.jetbrains.php.lang.psi.elements.ArrayHashElement
-import com.jetbrains.php.lang.psi.elements.MethodReference
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
+import com.jetbrains.php.lang.psi.elements.MethodReference
+import com.github.xenforo.query.constants.BuilderMethods
 
 object QueryChainResolver
 {
@@ -110,23 +109,15 @@ object QueryChainResolver
 
 	fun isStringLiteralArrayKeyInColumnArray(element: PsiElement): Boolean
 	{
-		val literalParent = PsiTreeUtil.getParentOfType(
-			element, StringLiteralExpression::class.java
-		) ?: return false
+		val literal =
+			PsiTreeUtil.getParentOfType(element, StringLiteralExpression::class.java)
+				?: return false
 
-		PsiTreeUtil.getParentOfType(
-			literalParent,
-			ArrayHashElement::class.java
-		)?.let { hash ->
-			hash.key?.let { keyExpr ->
-				return keyExpr === literalParent
-			}
-			return hash.value === literalParent
-		}
+		val arrayHash =
+			PsiTreeUtil.getParentOfType(literal, ArrayHashElement::class.java)
+				?: return false
 
-		return PsiTreeUtil.getParentOfType(
-			literalParent,
-			ArrayCreationExpression::class.java
-		) != null
+		val keyExpr = arrayHash.key ?: return false
+		return PsiTreeUtil.isAncestor(keyExpr, literal, false)
 	}
 }
