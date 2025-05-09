@@ -7,9 +7,12 @@
 <img src="https://raw.githubusercontent.com/xenforo-ltd/xenforo-query/main/src/main/resources/META-INF/pluginIcon.svg" width="256" height="256" alt="XenForo Query" />
 
 <!-- Plugin description -->
-The XenForo Query plugin provides assistance for writing database queries within XenForo PHP projects using PhpStorm.
+Supercharge your XenForo projects in PhpStorm with the XenForo Query plugin! It connects directly to your project's database, giving you a powerful toolkit for building queries, including:
 
-Currently, the plugin offers completion suggestions for database table names when using the `\XF::query('')` method. It integrates with your IDE's configured database connections to provide relevant table names.
+*   **Smart Code Completion:** Get smart suggestions for table and column names right as you type. Whether you're using XenForo's query builder methods like `query`, `table`, or `join` for tables, or `select`, `where`, `orderBy`, and various insert/update functions for columns, the plugin knows your database schema and offers accurate autocompletion.
+*   **Easy Navigation & References:** Jump straight from a table or column name in your PHP code to its definition in your database. No more hunting around: get to the schema details you need, fast.
+
+The XenForo Query plugin uses your live database schema (with smart caching for speed!) to make writing, navigating, and checking your XenForo database queries a breeze.
 <!-- Plugin description end -->
 
 ## Installation

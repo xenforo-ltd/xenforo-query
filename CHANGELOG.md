@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+- Updated README.md
+- Add support for completion in the `deleteWhere` helper method
+
 ## [1.0.0] - 2025-05-09
 
 - Initial release

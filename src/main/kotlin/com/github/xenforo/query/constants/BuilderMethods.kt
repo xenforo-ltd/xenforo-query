@@ -12,6 +12,7 @@ object BuilderMethods
 		"orWhere", "orWhereLike", "orWhereNotLike",
 		"groupBy", "orderBy", "orderByDesc",
 		"find", "having", "orHaving",
+		"deleteWhere",
 	)
 
 	val ColumnArrayMethods = listOf(
