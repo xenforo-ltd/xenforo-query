@@ -20,5 +20,8 @@
         <psi.referenceContributor
                 language="PHP"
                 implementation="com.github.xenforo.query.reference.ColumnReferenceContributor"/>
+        <psi.referenceContributor
+                language="PHP"
+                implementation="com.github.xenforo.query.reference.TableReferenceContributor"/>
     </extensions>
 </idea-plugin>
