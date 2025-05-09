@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- Add support for completion in the new `increment` and `decrement` methods
+
 ## [1.0.1] - 2025-05-09
 
 - Updated README.md
