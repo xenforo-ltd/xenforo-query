@@ -2,7 +2,7 @@
 
 # XenForo Query Changelog
 
-## [1.0.0] - 2025-05-09
+## [Unreleased]
 
 - Initial release
 - PhpStorm development helper for the new XenForo Query Builder
