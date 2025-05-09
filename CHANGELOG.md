@@ -4,7 +4,12 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-05-09
+
 - Initial release
 - PhpStorm development helper for the new XenForo Query Builder
 - Supports column and table completions
 - Supports navigating to table and column references
+
+[Unreleased]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/xenforo-ltd/xenforo-query/commits/v1.0.0
