@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-05-09
+
 - Updated README.md
 - Add support for completion in the `deleteWhere` helper method
 
@@ -14,5 +16,6 @@
 - Supports column and table completions
 - Supports navigating to table and column references
 
-[Unreleased]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/xenforo-ltd/xenforo-query/commits/v1.0.0
