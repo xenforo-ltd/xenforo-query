@@ -13,55 +13,47 @@ import com.intellij.psi.PsiReferenceBase
 import com.intellij.sql.symbols.DasPsiWrappingSymbol
 
 class ColumnPsiReference(
-	element: PsiElement,
-	private val targetColumn: DasColumn,
-	private val project: Project,
-) : PsiReferenceBase<PsiElement>(element, true)
-{
+    element: PsiElement,
+    private val targetColumn: DasColumn,
+    private val project: Project,
+) : PsiReferenceBase<PsiElement>(element, true) {
+    override fun resolve(): PsiElement? {
+        val columnName = targetColumn.name
 
-	override fun resolve(): PsiElement?
-	{
-		val columnName = targetColumn.name
+        val table = targetColumn.dasParent as? DasTable
 
-		val table = targetColumn.dasParent as? DasTable
+        val dbPsiFacade = DbPsiFacade.getInstance(project)
+        val dbElement = dbPsiFacade.findElement(targetColumn)
+        if (dbElement != null) {
+            return dbElement
+        }
 
-		val dbPsiFacade = DbPsiFacade.getInstance(project)
-		val dbElement = dbPsiFacade.findElement(targetColumn)
-		if (dbElement != null)
-		{
-			return dbElement
-		}
+        DbUtil.getDataSources(project).forEach { dataSource ->
+            if (dataSource is DbDataSource) {
+                val dbTable = dbPsiFacade.findElement(table)
+                if (dbTable is DbElement) {
+                    val children = dbTable.children
+                    val columnElement =
+                        children.find { child ->
+                            when {
+                                child is PsiNamedElement -> child.name?.equals(columnName, ignoreCase = true) ?: false
+                                else -> false
+                            }
+                        }
 
-		DbUtil.getDataSources(project).forEach { dataSource ->
-			if (dataSource is DbDataSource)
-			{
-				val dbTable = dbPsiFacade.findElement(table)
-				if (dbTable is DbElement)
-				{
-					val children = dbTable.children
-					val columnElement = children.find { child ->
-						when
-						{
-							child is PsiNamedElement -> child.name?.equals(columnName, ignoreCase = true) ?: false
-							else -> false
-						}
-					}
+                    if (columnElement != null) {
+                        return columnElement
+                    }
+                }
+            }
+        }
 
-					if (columnElement != null)
-					{
-						return columnElement
-					}
-				}
-			}
-		}
+        val symbol = DasPsiWrappingSymbol(targetColumn, project)
+        val navElement = symbol.navigationElement
+        if (navElement !== symbol) {
+            return navElement
+        }
 
-		val symbol = DasPsiWrappingSymbol(targetColumn, project)
-		val navElement = symbol.navigationElement
-		if (navElement !== symbol)
-		{
-			return navElement
-		}
-
-		return null
-	}
+        return null
+    }
 }
