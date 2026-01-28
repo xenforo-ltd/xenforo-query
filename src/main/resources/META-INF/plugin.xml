@@ -9,19 +9,56 @@
     <depends>com.intellij.database</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <!-- Completion -->
         <completion.contributor
                 language="PHP"
                 implementationClass="com.github.xenforo.query.completion.ColumnCompletionContributor"/>
         <completion.contributor
                 language="PHP"
                 implementationClass="com.github.xenforo.query.completion.TableCompletionContributor"/>
+
+        <!-- SQL Injection -->
         <languageInjector implementation="com.github.xenforo.query.injector.SqlInjector"/>
 
+        <!-- References -->
         <psi.referenceContributor
                 language="PHP"
                 implementation="com.github.xenforo.query.reference.ColumnReferenceContributor"/>
         <psi.referenceContributor
                 language="PHP"
                 implementation="com.github.xenforo.query.reference.TableReferenceContributor"/>
+
+        <!-- Settings -->
+        <projectConfigurable
+                instance="com.github.xenforo.query.settings.XenForoQueryConfigurable"
+                id="com.github.xenforo.query.settings"
+                displayName="XenForo Query"
+                parentId="tools"/>
+        <projectService
+                serviceImplementation="com.github.xenforo.query.settings.XenForoQuerySettings"/>
+
+        <!-- Inspections -->
+        <localInspection
+                language="PHP"
+                groupPath="PHP"
+                groupName="XenForo Query"
+                shortName="XenForoUnknownTable"
+                displayName="Unknown table name"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="com.github.xenforo.query.inspections.UnknownTableInspection"/>
+        <localInspection
+                language="PHP"
+                groupPath="PHP"
+                groupName="XenForo Query"
+                shortName="XenForoUnknownColumn"
+                displayName="Unknown column name"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="com.github.xenforo.query.inspections.UnknownColumnInspection"/>
+
+        <!-- Auto-popup handler -->
+        <typedHandler
+                implementation="com.github.xenforo.query.completion.XenForoQueryAutoPopupHandler"/>
     </extensions>
 </idea-plugin>
