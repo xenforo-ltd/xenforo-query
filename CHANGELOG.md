@@ -8,7 +8,10 @@
 
 ### Fixed
 - Removed usage of deprecated `DbPsiFacade.findElement()` API for better forward compatibility
-- Removed upper version bound to support all future PhpStorm versions
+- Fixed version compatibility to support PhpStorm versions 2025.1 through 2029.x
+
+### Changed
+- Added disk space cleanup to CI build and test jobs for improved reliability
 
 ## [1.1.0] - 2026-01-28
 
