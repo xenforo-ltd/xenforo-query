@@ -52,11 +52,6 @@ class DeclarativeInsertHandler private constructor(
         private var myValueToInsert: String = ""
         private var myTriggerAutoPopup = false
 
-        fun disableOnCompletionChars(ignoredChars: String): Builder {
-            myIgnoredCharacters = ignoredChars
-            return this
-        }
-
         fun insertOrMove(value: String): Builder {
             myValueToInsert = value
             return this

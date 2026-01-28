@@ -8,7 +8,7 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 
-class XenForoQueryConfigurable(private val project: Project) : BoundConfigurable("XenForo Query") {
+class XenForoQueryConfigurable(project: Project) : BoundConfigurable("XenForo Query") {
     private val settings = XenForoQuerySettings.getInstance(project)
 
     override fun createPanel(): DialogPanel =

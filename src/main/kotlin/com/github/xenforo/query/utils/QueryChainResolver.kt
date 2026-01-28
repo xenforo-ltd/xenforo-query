@@ -99,7 +99,7 @@ object QueryChainResolver {
      * that appears before the variable usage.
      */
     private fun resolveVariableAssignment(variable: Variable): PsiElement? {
-        val variableName = variable.name ?: return null
+        val variableName = variable.name
         val containingFile = variable.containingFile ?: return null
 
         // Search for assignments to this variable in the same scope
@@ -141,7 +141,7 @@ object QueryChainResolver {
      * that the closure is passed to, allowing us to trace back to the table.
      */
     private fun resolveClosureParameterToMethod(variable: Variable): MethodReference? {
-        val variableName = variable.name ?: return null
+        val variableName = variable.name
 
         // Find the enclosing function/closure
         val enclosingFunction =
@@ -176,7 +176,7 @@ object QueryChainResolver {
         val baseTable = parts.getOrNull(0)?.trim()
         val alias = parts.getOrNull(1)?.trim()
 
-        if (baseTable != null && baseTable.isNotEmpty()) {
+        if (!baseTable.isNullOrEmpty()) {
             tables.add(TableContext(baseTable, alias, joinType, joinCondition))
         }
     }
