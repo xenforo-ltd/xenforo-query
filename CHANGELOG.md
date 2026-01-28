@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-01-28
+
+### Fixed
+- Removed usage of deprecated `DbPsiFacade.findElement()` API for better forward compatibility
+- Removed upper version bound to support all future PhpStorm versions
+
 ## [1.1.0] - 2026-01-28
 
 ### Added
@@ -34,7 +40,8 @@
 - Supports column and table completions
 - Supports navigating to table and column references
 
-[Unreleased]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.0...v1.0.1
