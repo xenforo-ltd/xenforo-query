@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-01-28
+
+### Fixed
+
+- Removed usage of deprecated `AutoPopupController.autoPopupMemberLookup()` API
+- Fixed Qodana warnings: redundant null checks and unused code
+
 ## [1.1.1] - 2026-01-28
 
 ### Fixed
@@ -47,7 +54,8 @@
 - Supports column and table completions
 - Supports navigating to table and column references
 
-[Unreleased]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/xenforo-ltd/xenforo-query/compare/v1.0.1...v1.0.2
