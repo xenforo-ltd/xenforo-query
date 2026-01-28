@@ -29,7 +29,7 @@ jobs:
   # Prepare environment and build the plugin
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       version: ${{ steps.properties.outputs.version }}
       changelog: ${{ steps.properties.outputs.changelog }}
@@ -100,7 +100,7 @@ jobs:
   test:
     name: Test
     needs: [ build ]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
 
       # Free GitHub Actions Environment Disk Space
@@ -147,7 +147,7 @@ jobs:
   inspectCode:
     name: Inspect code
     needs: [ build ]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: write
       checks: write
@@ -185,7 +185,7 @@ jobs:
   verify:
     name: Verify plugin
     needs: [ build ]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
 
       # Free GitHub Actions Environment Disk Space
@@ -235,7 +235,7 @@ jobs:
     name: Release draft
     if: github.event_name != 'pull_request'
     needs: [ build, test, inspectCode, verify ]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       contents: write
     steps:
