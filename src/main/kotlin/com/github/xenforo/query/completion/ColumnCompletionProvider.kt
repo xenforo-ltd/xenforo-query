@@ -1,87 +1,87 @@
 package com.github.xenforo.query.completion
 
 import com.github.xenforo.query.constants.BuilderMethods
+import com.github.xenforo.query.settings.XenForoQuerySettings
 import com.github.xenforo.query.utils.LookupBuilder
 import com.github.xenforo.query.utils.QueryChainResolver
+import com.github.xenforo.query.utils.XenForoClassDetector
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionProvider
 import com.intellij.codeInsight.completion.CompletionResultSet
-import com.intellij.database.util.DasUtil
-import com.intellij.database.util.DbUtil
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.util.ProcessingContext
 
-class ColumnCompletionProvider : CompletionProvider<CompletionParameters>()
-{
-	override fun addCompletions(
-		parameters: CompletionParameters,
-		context: ProcessingContext,
-		result: CompletionResultSet,
-	)
-	{
-		val position = parameters.position
-		val method = QueryChainResolver.findMethodReference(position) ?: return
-		val methodName = method.name ?: return
+class ColumnCompletionProvider : CompletionProvider<CompletionParameters>() {
+    override fun addCompletions(
+        parameters: CompletionParameters,
+        context: ProcessingContext,
+        result: CompletionResultSet,
+    ) {
+        val position = parameters.position
+        val project = position.project
+        val settings = XenForoQuerySettings.getInstance(project)
 
-		if (BuilderMethods.ColumnArrayMethods.contains(methodName)
-			&& !QueryChainResolver.isStringLiteralArrayKeyInColumnArray(position)
-		)
-		{
-			return
-		}
+        // Check if feature is enabled
+        if (!settings.isColumnCompletionEnabled) {
+            return
+        }
 
-		if (
-			!isColumnAcceptingMethod(methodName) &&
-			!isMethodAcceptingColumnArguments(methodName) &&
-			!isColumnArrayMethod(methodName)
-		)
-		{
-			return
-		}
+        val method = QueryChainResolver.findMethodReference(position) ?: return
+        val methodName = method.name ?: return
 
-		val tableContexts = QueryChainResolver.resolveTables(method)
+        // Only trigger for XenForo's Query Builder
+        if (!XenForoClassDetector.isXenForoQueryBuilder(method)) {
+            return
+        }
 
-		if (tableContexts.isEmpty())
-		{
-			return
-		}
+        if (BuilderMethods.ColumnArrayMethods.contains(methodName) &&
+            !QueryChainResolver.isStringLiteralArrayKeyInColumnArray(position)
+        ) {
+            return
+        }
 
-		val project = position.project
+        if (
+            !isColumnAcceptingMethod(methodName) &&
+            !isMethodAcceptingColumnArguments(methodName) &&
+            !isColumnArrayMethod(methodName)
+        ) {
+            return
+        }
 
-		ApplicationManager.getApplication().runReadAction {
-			val tables = LookupBuilder.getCachedTables(project) {
-				DbUtil.getDataSources(project)
-					.asSequence()
-					.flatMap { DasUtil.getTables(it) }
-					.toList()
-			}
+        val tableContexts = QueryChainResolver.resolveTables(method)
 
-			for (tableContext in tableContexts)
-			{
-				val table = tables.firstOrNull { it.name.equals(tableContext.baseTable, ignoreCase = true) } ?: continue
-				val columns = LookupBuilder.getCachedColumns(project, table.name) {
-					DasUtil.getColumns(table).toList()
-				}
-				columns.forEach { column ->
-					val lookupElement = LookupBuilder.forColumn(column, project, tableContext.alias)
-					result.addElement(lookupElement)
-				}
-			}
-		}
-	}
+        if (tableContexts.isEmpty()) {
+            return
+        }
 
-	private fun isColumnAcceptingMethod(methodName: String): Boolean
-	{
-		return BuilderMethods.ColumnMethods.contains(methodName)
-	}
+        ApplicationManager.getApplication().runReadAction {
+            ProgressManager.checkCanceled()
 
-	private fun isMethodAcceptingColumnArguments(methodName: String): Boolean
-	{
-		return BuilderMethods.TableMethods.filter { it.endsWith("join", true) }.contains(methodName)
-	}
+            for (tableContext in tableContexts) {
+                ProgressManager.checkCanceled()
 
-	private fun isColumnArrayMethod(methodName: String): Boolean
-	{
-		return BuilderMethods.ColumnArrayMethods.contains(methodName)
-	}
+                val table = LookupBuilder.findTable(project, tableContext.baseTable) ?: continue
+                val columns = LookupBuilder.getColumnsForTable(project, table.name)
+				
+                columns.forEach { column ->
+                    ProgressManager.checkCanceled()
+                    val lookupElement = LookupBuilder.forColumn(column, project, tableContext.alias)
+                    result.addElement(lookupElement)
+                }
+            }
+        }
+    }
+
+    private fun isColumnAcceptingMethod(methodName: String): Boolean {
+        return BuilderMethods.ColumnMethods.contains(methodName)
+    }
+
+    private fun isMethodAcceptingColumnArguments(methodName: String): Boolean {
+        return BuilderMethods.TableMethods.filter { it.endsWith("join", true) }.contains(methodName)
+    }
+
+    private fun isColumnArrayMethod(methodName: String): Boolean {
+        return BuilderMethods.ColumnArrayMethods.contains(methodName)
+    }
 }

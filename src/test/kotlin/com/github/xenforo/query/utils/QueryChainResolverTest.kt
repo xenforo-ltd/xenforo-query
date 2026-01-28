@@ -1,0 +1,523 @@
+package com.github.xenforo.query.utils
+
+import com.github.xenforo.query.XenForoQueryTestCase
+import com.intellij.psi.util.PsiTreeUtil
+import com.jetbrains.php.lang.psi.elements.MethodReference
+import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
+
+/**
+ * Tests for QueryChainResolver utility class.
+ *
+ * These tests verify that the chain resolver correctly extracts table information
+ * from XenForo query builder method chains.
+ *
+ * Note: These tests require the PHP plugin to be loaded. If the PHP plugin is not
+ * available (e.g., in CI without full IDE), tests will be skipped.
+ */
+class QueryChainResolverTest : XenForoQueryTestCase() {
+    override fun setUp() {
+        super.setUp()
+        // Skip tests if PHP plugin isn't loaded
+        if (!isPhpPluginLoaded()) {
+            println("PHP plugin not loaded, skipping test")
+        }
+    }
+
+    /**
+     * Test resolving a simple query with single table.
+     */
+    fun testResolvesSimpleQueryTable() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user')->where('user_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        assertNotNull("Should find where method", whereMethod)
+
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals("Should find 1 table", 1, tables.size)
+        assertEquals("xf_user", tables[0].baseTable)
+        assertNull("Should have no alias", tables[0].alias)
+    }
+
+    /**
+     * Test resolving a table with AS alias syntax.
+     */
+    fun testResolvesTableWithAlias() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user AS u')->where('user_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals(1, tables.size)
+        assertEquals("xf_user", tables[0].baseTable)
+        assertEquals("u", tables[0].alias)
+    }
+
+    /**
+     * Test resolving a table with space alias syntax (no AS keyword).
+     */
+    fun testResolvesTableWithSpaceAlias() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user u')->where('user_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals(1, tables.size)
+        assertEquals("xf_user", tables[0].baseTable)
+        assertEquals("u", tables[0].alias)
+    }
+
+    /**
+     * Test resolving with a single JOIN.
+     */
+    fun testResolvesJoinedTables() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread')
+            	->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id')
+            	->where('user_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals("Should find 2 tables", 2, tables.size)
+        assertEquals("xf_thread", tables[0].baseTable)
+        assertEquals("xf_user", tables[1].baseTable)
+        assertEquals("JOIN", tables[1].joinType)
+    }
+
+    /**
+     * Test resolving LEFT JOIN.
+     */
+    fun testResolvesLeftJoin() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread')
+            	->leftJoin('xf_node', 'xf_thread.node_id', '=', 'xf_node.node_id')
+            	->where('node_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals(2, tables.size)
+        assertEquals("LEFT JOIN", tables[1].joinType)
+    }
+
+    /**
+     * Test resolving RIGHT JOIN.
+     */
+    fun testResolvesRightJoin() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread')
+            	->rightJoin('xf_node', 'xf_thread.node_id', '=', 'xf_node.node_id')
+            	->where('node_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals(2, tables.size)
+        assertEquals("RIGHT JOIN", tables[1].joinType)
+    }
+
+    /**
+     * Test resolving multiple JOINs.
+     */
+    fun testResolvesMultipleJoins() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread AS t')
+            	->join('xf_user AS u', 't.user_id', '=', 'u.user_id')
+            	->leftJoin('xf_node AS n', 't.node_id', '=', 'n.node_id')
+            	->where('t.thread_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals("Should find 3 tables", 3, tables.size)
+
+        assertEquals("xf_thread", tables[0].baseTable)
+        assertEquals("t", tables[0].alias)
+
+        assertEquals("xf_user", tables[1].baseTable)
+        assertEquals("u", tables[1].alias)
+        assertEquals("JOIN", tables[1].joinType)
+
+        assertEquals("xf_node", tables[2].baseTable)
+        assertEquals("n", tables[2].alias)
+        assertEquals("LEFT JOIN", tables[2].joinType)
+    }
+
+    /**
+     * Test that ->table() method is recognized.
+     */
+    fun testResolvesTableMethod() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query()->table('xf_post')->where('post_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals(1, tables.size)
+        assertEquals("xf_post", tables[0].baseTable)
+    }
+
+    /**
+     * Test chain traversal works through many chained methods.
+     */
+    fun testChainTraversalNotBroken() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread')
+            	->where('discussion_state', 'visible')
+            	->where('sticky', 0)
+            	->orderBy('post_date')
+            	->limit(10)
+            	->select('title');
+            """.trimIndent(),
+        )
+
+        val selectMethod = findMethodByName("select")
+        val tables = QueryChainResolver.resolveTables(selectMethod!!)
+
+        assertEquals("Should still find the base table despite long chain", 1, tables.size)
+        assertEquals("xf_thread", tables[0].baseTable)
+    }
+
+    /**
+     * Test finding method reference works.
+     */
+    fun testFindMethodReference() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user')->where('user_id<caret>', 1);
+            """.trimIndent(),
+        )
+
+        val element = getElementAtCaret()
+        assertNotNull("Should find element at caret", element)
+
+        val method = QueryChainResolver.findMethodReference(element!!)
+        assertNotNull("Should find method reference", method)
+        assertEquals("where", method?.name)
+    }
+
+    /**
+     * Test that isStringLiteralArrayKeyInColumnArray correctly identifies array keys.
+     */
+    fun testIsArrayKeyDetection() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user')->update([
+            	'username' => 'new_value'
+            ]);
+            """.trimIndent(),
+        )
+
+        // Find the 'username' string literal (the key)
+        val stringLiterals = PsiTreeUtil.findChildrenOfType(myFixture.file, StringLiteralExpression::class.java)
+        val keyLiteral = stringLiterals.find { it.contents == "username" }
+        assertNotNull("Should find username string literal", keyLiteral)
+
+        val result = QueryChainResolver.isStringLiteralArrayKeyInColumnArray(keyLiteral!!)
+        assertTrue("Should detect string as array key", result)
+    }
+
+    /**
+     * Test that isStringLiteralArrayKeyInColumnArray returns false for array values.
+     */
+    fun testIsArrayValueDetection() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user')->update([
+            	'username' => 'new_value'
+            ]);
+            """.trimIndent(),
+        )
+
+        // Find the 'new_value' string literal (the value)
+        val stringLiterals = PsiTreeUtil.findChildrenOfType(myFixture.file, StringLiteralExpression::class.java)
+        val valueLiteral = stringLiterals.find { it.contents == "new_value" }
+        assertNotNull("Should find new_value string literal", valueLiteral)
+
+        val result = QueryChainResolver.isStringLiteralArrayKeyInColumnArray(valueLiteral!!)
+        assertFalse("Should not detect string as array key when it's a value", result)
+    }
+
+    /**
+     * Test resolving with lowercase 'as' keyword.
+     */
+    fun testResolvesTableWithLowercaseAs() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user as u')->where('user_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals(1, tables.size)
+        assertEquals("xf_user", tables[0].baseTable)
+        assertEquals("u", tables[0].alias)
+    }
+
+    /**
+     * Test with empty query (no table).
+     */
+    fun testEmptyQuery() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query()->where('col', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertTrue("Should return empty list when no table specified", tables.isEmpty())
+    }
+
+    /**
+     * Test resolving tables through variable assignment.
+     * This is a common pattern: $query = \XF::query('table'); $query->method();
+     */
+    fun testResolvesTablesThroughVariableAssignment() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            ${'$'}query = \XF::query('xf_post');
+            ${'$'}query->where('post_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        assertNotNull("Should find where method", whereMethod)
+
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals("Should find 1 table through variable", 1, tables.size)
+        assertEquals("xf_post", tables[0].baseTable)
+    }
+
+    /**
+     * Test resolving tables through variable with chained methods on assignment.
+     */
+    fun testResolvesTablesThroughVariableWithChain() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            ${'$'}query = \XF::query('xf_thread')->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id');
+            ${'$'}query->where('thread_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        assertNotNull("Should find where method", whereMethod)
+
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals("Should find 2 tables through variable", 2, tables.size)
+        assertEquals("xf_thread", tables[0].baseTable)
+        assertEquals("xf_user", tables[1].baseTable)
+    }
+
+    /**
+     * Test resolving tables when variable is reassigned (uses latest assignment before usage).
+     */
+    fun testResolvesTablesFromLatestVariableAssignment() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            ${'$'}query = \XF::query('xf_user');
+            ${'$'}query = \XF::query('xf_post');
+            ${'$'}query->where('post_id', 1);
+            """.trimIndent(),
+        )
+
+        val whereMethod = findMethodByName("where")
+        assertNotNull("Should find where method", whereMethod)
+
+        val tables = QueryChainResolver.resolveTables(whereMethod!!)
+
+        assertEquals("Should find 1 table", 1, tables.size)
+        assertEquals("Should use latest assignment (xf_post)", "xf_post", tables[0].baseTable)
+    }
+
+    /**
+     * Test resolving tables with variable and table() method.
+     */
+    fun testResolvesTablesThroughVariableWithTableMethod() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            ${'$'}builder = \XF::query()->table('xf_node');
+            ${'$'}builder->select('node_id');
+            """.trimIndent(),
+        )
+
+        val selectMethod = findMethodByName("select")
+        assertNotNull("Should find select method", selectMethod)
+
+        val tables = QueryChainResolver.resolveTables(selectMethod!!)
+
+        assertEquals("Should find 1 table through variable with table()", 1, tables.size)
+        assertEquals("xf_node", tables[0].baseTable)
+    }
+
+    /**
+     * Test resolving tables inside a closure parameter.
+     * This is a common pattern for complex where conditions.
+     */
+    fun testResolvesTablesInsideClosureParameter() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_post')
+            	->where(function (${'$'}query) {
+            		${'$'}query->where('position', '>', 0);
+            	});
+            """.trimIndent(),
+        )
+
+        // Find the inner where method (inside the closure)
+        val methods = findAllMethodReferences()
+        val innerWhere =
+            methods.find {
+                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("position") == true
+            }
+        assertNotNull("Should find inner where method", innerWhere)
+
+        val tables = QueryChainResolver.resolveTables(innerWhere!!)
+
+        assertEquals("Should find 1 table through closure parameter", 1, tables.size)
+        assertEquals("xf_post", tables[0].baseTable)
+    }
+
+    /**
+     * Test resolving tables inside nested closures.
+     */
+    fun testResolvesTablesInsideNestedClosures() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_post')
+            	->where(function (${'$'}query) {
+            		${'$'}query->where('col1', 1)
+            			->orWhere(function (${'$'}query) {
+            				${'$'}query->where('col2', 2);
+            			});
+            	});
+            """.trimIndent(),
+        )
+
+        // Find the innermost where method (col2)
+        val methods = findAllMethodReferences()
+        val innerWhere =
+            methods.find {
+                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("col2") == true
+            }
+        assertNotNull("Should find innermost where method", innerWhere)
+
+        val tables = QueryChainResolver.resolveTables(innerWhere!!)
+
+        assertEquals("Should find 1 table through nested closure", 1, tables.size)
+        assertEquals("xf_post", tables[0].baseTable)
+    }
+
+    /**
+     * Test resolving tables inside closure with joins.
+     */
+    fun testResolvesTablesInsideClosureWithJoins() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread')
+            	->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id')
+            	->where(function (${'$'}query) {
+            		${'$'}query->where('user_state', 'valid');
+            	});
+            """.trimIndent(),
+        )
+
+        // Find the inner where method
+        val methods = findAllMethodReferences()
+        val innerWhere =
+            methods.find {
+                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("user_state") == true
+            }
+        assertNotNull("Should find inner where method", innerWhere)
+
+        val tables = QueryChainResolver.resolveTables(innerWhere!!)
+
+        assertEquals("Should find 2 tables through closure with joins", 2, tables.size)
+        assertEquals("xf_thread", tables[0].baseTable)
+        assertEquals("xf_user", tables[1].baseTable)
+    }
+
+    /**
+     * Helper method to find a MethodReference by method name.
+     */
+    private fun findMethodByName(name: String): MethodReference? {
+        val methods = findAllMethodReferences()
+        return methods.find { it.name == name }
+    }
+}
