@@ -7,15 +7,18 @@
 ## [1.1.1] - 2026-01-28
 
 ### Fixed
+
 - Removed usage of deprecated `DbPsiFacade.findElement()` API for better forward compatibility
 - Fixed version compatibility to support PhpStorm versions 2025.1 through 2029.x
 
 ### Changed
+
 - Added disk space cleanup to CI build and test jobs for improved reliability
 
 ## [1.1.0] - 2026-01-28
 
 ### Added
+
 - **Closure parameter support**: Completions and inspections now work inside closure parameters passed to `where()`, `whereOr()`, and similar methods
 - **Variable assignment resolution**: Completions work when the query builder is assigned to a variable (e.g., `$query = \XF::query('table'); $query->where(...)`)
 - **Inspections**: New inspections warn about unknown tables and unknown columns in query builder calls
@@ -24,6 +27,7 @@
 - ktlint code style enforcement for development
 
 ### Fixed
+
 - Fixed `CachedValue` exceptions that could occur during indexing
 - Improved reliability of table resolution across complex method chains
 
