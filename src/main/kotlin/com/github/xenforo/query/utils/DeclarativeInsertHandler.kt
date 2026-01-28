@@ -35,7 +35,7 @@ class DeclarativeInsertHandler private constructor(
         }
 
         if (autoPopup) {
-            AutoPopupController.getInstance(project).autoPopupMemberLookup(editor, null)
+            AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
         }
     }
 
