@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Entity Finder column completion for `where()`, `order()`, `whereOr()`, and other Finder methods
+- Go To Definition support for column names in Finder method calls
+
 ## [1.1.2] - 2026-01-28
 
 ### Fixed
