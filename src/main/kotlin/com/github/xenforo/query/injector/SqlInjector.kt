@@ -26,20 +26,13 @@ class SqlInjector : LanguageInjector {
 
         val project = host.project
         val settings = XenForoQuerySettings.getInstance(project)
-
-        // Check if feature is enabled
-        if (!settings.isSqlInjectionEnabled) {
-            return
-        }
+        if (!settings.isSqlInjectionEnabled) return
 
         val psiElement = host as PsiElement
 
         val parentMethodCall = PsiTreeUtil.getParentOfType(psiElement, MethodReference::class.java)
         if (parentMethodCall != null) {
-            // Verify this is XenForo's Query Builder
-            if (!XenForoClassDetector.isXenForoQueryBuilder(parentMethodCall)) {
-                return
-            }
+            if (!XenForoClassDetector.isXenForoQueryBuilder(parentMethodCall)) return
 
             val methodName = parentMethodCall.name
             val rawMethods = setOf("selectRaw", "whereRaw", "havingRaw", "orderByRaw", "groupByRaw")

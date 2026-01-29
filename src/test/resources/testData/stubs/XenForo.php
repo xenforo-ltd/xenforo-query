@@ -135,6 +135,225 @@ abstract class AbstractAdapter
     public function delete(string $table, string $where): int {}
 }
 
+namespace XF\Mvc\Entity;
+
+/**
+ * XenForo Entity Structure stub
+ */
+class Structure
+{
+    public $shortName;
+    public $contentType;
+    public $table;
+    public $primaryKey;
+    public $columns = [];
+    public $relations = [];
+    public $getters = [];
+    public $defaultWith = [];
+    public $options = [];
+    public $behaviors = [];
+    public $columnAliases = [];
+    public $withAliases = [];
+}
+
+/**
+ * XenForo base Entity stub
+ */
+abstract class Entity implements \ArrayAccess
+{
+    public const INT = 0x0001;
+    public const UINT = 0x0002;
+    public const FLOAT = 0x0003;
+    public const BOOL = 0x10004;
+    public const STR = 0x0005;
+    public const BINARY = 0x0006;
+    public const SERIALIZED = 0x10007;
+    public const JSON = 0x10009;
+    public const JSON_ARRAY = 0x10010;
+    
+    abstract public static function getStructure(Structure $structure);
+}
+
+/**
+ * XenForo base Finder stub
+ * @template T of Entity
+ */
+class Finder implements \IteratorAggregate
+{
+    protected $structure;
+    
+    public function where($condition, $operator = null, $value = null): static {}
+    public function whereOr(array $conditionA, ?array $conditionB = null): static {}
+    public function whereId($id): static {}
+    public function whereIds(array $ids): static {}
+    public function order($field, $direction = 'ASC'): static {}
+    public function setDefaultOrder($field, $direction = 'ASC'): static {}
+    public function with($name, $mustExist = false): static {}
+    public function limit($limit, $offset = null): static {}
+    public function offset($offset): static {}
+    public function fetch($limit = null, $offset = null): AbstractCollection {}
+    public function fetchOne($offset = null): ?Entity {}
+    public function total(): int {}
+    public function getIterator(): \Traversable {}
+}
+
+/**
+ * XenForo AbstractCollection stub
+ * @template T of Entity
+ */
+class AbstractCollection implements \IteratorAggregate, \Countable, \ArrayAccess
+{
+    public function getIterator(): \Traversable {}
+    public function count(): int {}
+    public function offsetExists($offset): bool {}
+    public function offsetGet($offset): mixed {}
+    public function offsetSet($offset, $value): void {}
+    public function offsetUnset($offset): void {}
+}
+
+/**
+ * XenForo Entity Manager stub
+ */
+class Manager
+{
+    /**
+     * @template T of Finder
+     * @param class-string<T> $class
+     * @return T
+     */
+    public function getFinder(string $class): Finder {}
+    
+    public function find(string $shortName, $id): ?Entity {}
+    public function create(string $shortName): Entity {}
+}
+
+namespace XF\Entity;
+
+use XF\Mvc\Entity\Entity;
+use XF\Mvc\Entity\Structure;
+
+/**
+ * Test Thread Entity stub
+ * 
+ * @property int|null $thread_id
+ * @property int $node_id
+ * @property string $title
+ * @property int $reply_count
+ * @property int $view_count
+ * @property int $user_id
+ * @property string $username
+ * @property int $post_date
+ * @property bool $sticky
+ * @property string $discussion_state
+ * @property bool $discussion_open
+ * @property string $discussion_type
+ */
+class Thread extends Entity
+{
+    public static function getStructure(Structure $structure)
+    {
+        $structure->table = 'xf_thread';
+        $structure->shortName = 'XF:Thread';
+        $structure->primaryKey = 'thread_id';
+        $structure->columns = [
+            'thread_id' => ['type' => self::UINT, 'autoIncrement' => true, 'nullable' => true],
+            'node_id' => ['type' => self::UINT, 'required' => true],
+            'title' => ['type' => self::STR, 'maxLength' => 150, 'required' => true],
+            'reply_count' => ['type' => self::UINT, 'default' => 0],
+            'view_count' => ['type' => self::UINT, 'default' => 0],
+            'user_id' => ['type' => self::UINT, 'required' => true],
+            'username' => ['type' => self::STR, 'maxLength' => 50, 'required' => true],
+            'post_date' => ['type' => self::UINT, 'default' => 0],
+            'sticky' => ['type' => self::BOOL, 'default' => false],
+            'discussion_state' => ['type' => self::STR, 'default' => 'visible'],
+            'discussion_open' => ['type' => self::BOOL, 'default' => true],
+            'discussion_type' => ['type' => self::STR, 'maxLength' => 50, 'default' => ''],
+        ];
+        return $structure;
+    }
+}
+
+/**
+ * Test User Entity stub
+ *
+ * @property int|null $user_id
+ * @property string $username
+ * @property string $email
+ * @property string $user_state
+ * @property int $register_date
+ * @property int $message_count
+ */
+class User extends Entity
+{
+    public static function getStructure(Structure $structure)
+    {
+        $structure->table = 'xf_user';
+        $structure->shortName = 'XF:User';
+        $structure->primaryKey = 'user_id';
+        $structure->columns = [
+            'user_id' => ['type' => self::UINT, 'autoIncrement' => true, 'nullable' => true],
+            'username' => ['type' => self::STR, 'maxLength' => 50, 'required' => true],
+            'email' => ['type' => self::STR, 'maxLength' => 120, 'required' => true],
+            'user_state' => ['type' => self::STR, 'default' => 'valid'],
+            'register_date' => ['type' => self::UINT, 'default' => 0],
+            'message_count' => ['type' => self::UINT, 'default' => 0],
+        ];
+        return $structure;
+    }
+}
+
+namespace XF\Finder;
+
+use XF\Entity\Thread;
+use XF\Entity\User;
+use XF\Mvc\Entity\AbstractCollection;
+use XF\Mvc\Entity\Finder;
+
+/**
+ * Test ThreadFinder stub
+ * 
+ * @method AbstractCollection<Thread> fetch(?int $limit = null, ?int $offset = null)
+ * @method Thread|null fetchOne(?int $offset = null)
+ * @extends Finder<Thread>
+ */
+class ThreadFinder extends Finder
+{
+}
+
+/**
+ * Test UserFinder stub
+ *
+ * @method AbstractCollection<User> fetch(?int $limit = null, ?int $offset = null)
+ * @method User|null fetchOne(?int $offset = null)
+ * @extends Finder<User>
+ */
+class UserFinder extends Finder
+{
+}
+
+namespace XF\Mvc;
+
+use XF\Mvc\Entity\Entity;
+use XF\Mvc\Entity\Finder;
+use XF\Mvc\Entity\Manager;
+
+/**
+ * XenForo base Controller stub
+ */
+abstract class Controller
+{
+    protected $app;
+    
+    /**
+     * @template T of Finder
+     * @param class-string<T> $type
+     * @return T
+     */
+    public function finder(string $type): Finder {}
+    
+    public function em(): Manager {}
+}
+
 namespace {
     /**
      * Main XenForo application class stub
@@ -148,5 +367,6 @@ namespace {
         public static function visitor(): object {}
         public static function language(): object {}
         public static function phrase(string $name, array $params = []): string {}
+        public static function em(): \XF\Mvc\Entity\Manager {}
     }
 }
