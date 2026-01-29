@@ -520,4 +520,103 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val methods = findAllMethodReferences()
         return methods.find { it.name == name }
     }
+
+    /**
+     * Test that isStringLiteralArrayValueInColumnArray correctly identifies array values
+     * in the second and third arguments of upsert.
+     */
+    fun testIsArrayValueInUpsertSecondArg() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user')
+                ->upsert(
+                    ['username' => 'test'],
+                    ['username', 'email'],
+                    ['last_seen']
+                );
+            """.trimIndent(),
+        )
+
+        // Find the 'username' string literal in the second argument (uniqueBy array)
+        val stringLiterals = PsiTreeUtil.findChildrenOfType(myFixture.file, StringLiteralExpression::class.java)
+        val secondArgValues = stringLiterals.filter { it.contents == "username" || it.contents == "email" }
+
+        // At least one should be detected as a value in the second argument
+        val foundValue = secondArgValues.any { lit ->
+            QueryChainResolver.isStringLiteralArrayValueInColumnArray(lit)
+        }
+
+        assertTrue("Should detect strings as array values in upsert second arg", foundValue)
+    }
+
+    /**
+     * Test that isStringLiteralArrayKeyInColumnArray returns false for nested array keys
+     * inside json_encode() calls.
+     */
+    fun testNestedJsonEncodeKeysNotDetected() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user')
+                ->upsert(
+                    [
+                        'username' => 'test',
+                        'data' => json_encode(['nested_key' => 'value']),
+                    ],
+                    ['username']
+                );
+            """.trimIndent(),
+        )
+
+        // Find the 'nested_key' string literal
+        val stringLiterals = PsiTreeUtil.findChildrenOfType(myFixture.file, StringLiteralExpression::class.java)
+        val nestedKey = stringLiterals.find { it.contents == "nested_key" }
+        assertNotNull("Should find nested_key string literal", nestedKey)
+
+        // Should NOT be detected as a column array key
+        val isKey = QueryChainResolver.isStringLiteralArrayKeyInColumnArray(nestedKey!!)
+        assertFalse("Should not detect nested json_encode key as array key", isKey)
+
+        // Should NOT be detected as a column array value
+        val isValue = QueryChainResolver.isStringLiteralArrayValueInColumnArray(nestedKey)
+        assertFalse("Should not detect nested json_encode key as array value", isValue)
+    }
+
+    /**
+     * Test getColumnArrayPosition for various positions.
+     */
+    fun testGetColumnArrayPosition() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_user')
+                ->upsert(
+                    ['username' => 'test'],
+                    ['username'],
+                    ['last_seen']
+                );
+            """.trimIndent(),
+        )
+
+        val stringLiterals = PsiTreeUtil.findChildrenOfType(myFixture.file, StringLiteralExpression::class.java)
+
+        // Find 'username' in first argument (should be KEY)
+        val firstArgKey = stringLiterals.find { it.contents == "username" &&
+            QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.KEY }
+        assertNotNull("Should find username as KEY in first arg", firstArgKey)
+
+        // Find 'username' in second argument (should be VALUE)
+        val secondArgValue = stringLiterals.find { it.contents == "username" &&
+            QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.VALUE }
+        assertNotNull("Should find username as VALUE in second arg", secondArgValue)
+
+        // Find 'last_seen' in third argument (should be VALUE)
+        val thirdArgValue = stringLiterals.find { it.contents == "last_seen" &&
+            QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.VALUE }
+        assertNotNull("Should find last_seen as VALUE in third arg", thirdArgValue)
+    }
 }

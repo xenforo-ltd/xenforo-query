@@ -32,7 +32,13 @@ class UnknownColumnInspection : LocalInspectionTool() {
                 if (!isColumnMethod && !isArrayMethod) return
                 if (!XenForoClassDetector.isXenForoQueryBuilder(method)) return
 
-                if (isArrayMethod && !QueryChainResolver.isStringLiteralArrayKeyInColumnArray(expression)) return
+                if (isArrayMethod) {
+                    // Check if this is either a key in the first argument (values array)
+                    // or a value in the second/third argument (uniqueBy/update arrays for upsert)
+                    val isKeyInArray = QueryChainResolver.isStringLiteralArrayKeyInColumnArray(expression)
+                    val isValueInArray = QueryChainResolver.isStringLiteralArrayValueInColumnArray(expression)
+                    if (!isKeyInArray && !isValueInArray) return
+                }
                 if (isColumnMethod) {
                     val args = method.parameters
                     if (args.isEmpty() || args[0] !== expression) return

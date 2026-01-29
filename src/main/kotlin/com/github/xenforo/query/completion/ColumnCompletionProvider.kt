@@ -56,10 +56,15 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>() {
         position: com.intellij.psi.PsiElement,
         result: CompletionResultSet,
     ) {
-        if (BuilderMethods.ColumnArrayMethods.contains(methodName) &&
-            !QueryChainResolver.isStringLiteralArrayKeyInColumnArray(position)
-        ) {
-            return
+        if (BuilderMethods.ColumnArrayMethods.contains(methodName)) {
+            // Check if position is in a column-relevant array position:
+            // - First arg: keys are columns
+            // - Second/third arg of upsert: values are columns
+            val isKeyPosition = QueryChainResolver.isStringLiteralArrayKeyInColumnArray(position)
+            val isValuePosition = QueryChainResolver.isStringLiteralArrayValueInColumnArray(position)
+            if (!isKeyPosition && !isValuePosition) {
+                return
+            }
         }
 
         if (!isBuilderColumnAcceptingMethod(methodName) &&

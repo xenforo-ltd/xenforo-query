@@ -11,9 +11,7 @@ import com.github.xenforo.query.utils.XenForoClassDetector
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReference
 import com.intellij.psi.PsiReferenceProvider
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
-import com.jetbrains.php.lang.psi.elements.ArrayHashElement
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 class ColumnReferenceProvider : PsiReferenceProvider() {
@@ -56,8 +54,13 @@ class ColumnReferenceProvider : PsiReferenceProvider() {
 
         if (!isValidMethod) return PsiReference.EMPTY_ARRAY
 
-        if (BuilderMethods.ColumnArrayMethods.contains(methodName) && !isArrayKey(lit)) {
-            return PsiReference.EMPTY_ARRAY
+        // For upsert/update/insert methods, check if the literal is in a valid column position
+        if (BuilderMethods.ColumnArrayMethods.contains(methodName)) {
+            val position = QueryChainResolver.getColumnArrayPosition(lit)
+            // Only create references for KEY (1st arg) or VALUE (2nd/3rd arg of upsert) positions
+            if (position == QueryChainResolver.ColumnArrayPosition.NONE) {
+                return PsiReference.EMPTY_ARRAY
+            }
         }
 
         val literalContent = lit.contents.trim()
@@ -107,11 +110,5 @@ class ColumnReferenceProvider : PsiReferenceProvider() {
                 ?: return PsiReference.EMPTY_ARRAY
 
         return arrayOf(ColumnPsiReference(lit, column, project))
-    }
-
-    private fun isArrayKey(literal: StringLiteralExpression): Boolean {
-        val arrayHash = PsiTreeUtil.getParentOfType(literal, ArrayHashElement::class.java) ?: return false
-        val keyExpr = arrayHash.key ?: return false
-        return PsiTreeUtil.isAncestor(keyExpr, literal, false)
     }
 }

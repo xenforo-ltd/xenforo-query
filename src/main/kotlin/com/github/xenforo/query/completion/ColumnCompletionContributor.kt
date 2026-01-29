@@ -1,6 +1,6 @@
 package com.github.xenforo.query.completion
 
-import com.github.xenforo.query.utils.QueryChainResolver.isStringLiteralArrayKeyInColumnArray
+import com.github.xenforo.query.utils.QueryChainResolver
 import com.intellij.codeInsight.completion.CompletionContributor
 import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.patterns.PatternCondition
@@ -29,7 +29,22 @@ class ColumnCompletionContributor : CompletionContributor() {
                             t: PsiElement,
                             context: ProcessingContext?,
                         ): Boolean {
-                            return isStringLiteralArrayKeyInColumnArray(t)
+                            return QueryChainResolver.isStringLiteralArrayKeyInColumnArray(t)
+                        }
+                    },
+                ),
+            ColumnCompletionProvider(),
+        )
+        extend(
+            CompletionType.BASIC,
+            PlatformPatterns.psiElement(PhpTokenTypes.STRING_LITERAL)
+                .with(
+                    object : PatternCondition<PsiElement>("isArrayValueInUpsert") {
+                        override fun accepts(
+                            t: PsiElement,
+                            context: ProcessingContext?,
+                        ): Boolean {
+                            return QueryChainResolver.isStringLiteralArrayValueInColumnArray(t)
                         }
                     },
                 ),
