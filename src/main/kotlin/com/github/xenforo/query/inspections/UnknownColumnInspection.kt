@@ -27,21 +27,12 @@ class UnknownColumnInspection : LocalInspectionTool() {
                 val method = QueryChainResolver.findMethodReference(expression) ?: return
                 val methodName = method.name ?: return
 
-                // Check if this is a column-accepting method
                 val isColumnMethod = BuilderMethods.ColumnMethods.contains(methodName)
                 val isArrayMethod = BuilderMethods.ColumnArrayMethods.contains(methodName)
-
                 if (!isColumnMethod && !isArrayMethod) return
-
-                // Verify this is XenForo's query builder
                 if (!XenForoClassDetector.isXenForoQueryBuilder(method)) return
 
-                // For array methods (insert/update), only check keys
-                if (isArrayMethod && !QueryChainResolver.isStringLiteralArrayKeyInColumnArray(expression)) {
-                    return
-                }
-
-                // For regular column methods, check first argument
+                if (isArrayMethod && !QueryChainResolver.isStringLiteralArrayKeyInColumnArray(expression)) return
                 if (isColumnMethod) {
                     val args = method.parameters
                     if (args.isEmpty() || args[0] !== expression) return
@@ -53,7 +44,6 @@ class UnknownColumnInspection : LocalInspectionTool() {
                 val columnRef = expression.contents.trim()
                 if (columnRef.isEmpty()) return
 
-                // Handle aliased columns like "u.user_id"
                 val (alias, columnName) =
                     if (columnRef.contains(".")) {
                         val parts = columnRef.split(".")
@@ -64,10 +54,8 @@ class UnknownColumnInspection : LocalInspectionTool() {
 
                 if (columnName.isNullOrEmpty()) return
 
-                // Collect all available columns from resolved tables
                 val availableColumns =
                     tableContexts.flatMap { ctx ->
-                        // If alias specified, only check that table
                         if (alias != null && ctx.alias != alias && ctx.baseTable != alias) {
                             return@flatMap emptyList()
                         }
@@ -79,7 +67,7 @@ class UnknownColumnInspection : LocalInspectionTool() {
                         LookupBuilder.getColumnsForTable(project, table.name).map { it.name }
                     }
 
-                // If we couldn't resolve any tables, don't report (to avoid false positives)
+                // Can't validate if no tables resolved - avoid false positives
                 if (availableColumns.isEmpty() && tableContexts.isNotEmpty()) return
 
                 if (!availableColumns.any { it.equals(columnName, ignoreCase = true) }) {

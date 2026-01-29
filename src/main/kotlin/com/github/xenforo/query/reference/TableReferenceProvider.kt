@@ -22,23 +22,12 @@ class TableReferenceProvider : PsiReferenceProvider() {
 
         val project = lit.project
         val settings = XenForoQuerySettings.getInstance(project)
-
-        // Check if feature is enabled
-        if (!settings.isTableReferencesEnabled) {
-            return PsiReference.EMPTY_ARRAY
-        }
+        if (!settings.isTableReferencesEnabled) return PsiReference.EMPTY_ARRAY
 
         val method = QueryChainResolver.findMethodReference(lit) ?: return PsiReference.EMPTY_ARRAY
         val methodName = method.name ?: return PsiReference.EMPTY_ARRAY
-
-        if (!BuilderMethods.TableMethods.contains(methodName)) {
-            return PsiReference.EMPTY_ARRAY
-        }
-
-        // Only trigger for XenForo's Query Builder
-        if (!XenForoClassDetector.isXenForoQueryBuilder(method)) {
-            return PsiReference.EMPTY_ARRAY
-        }
+        if (!BuilderMethods.TableMethods.contains(methodName)) return PsiReference.EMPTY_ARRAY
+        if (!XenForoClassDetector.isXenForoQueryBuilder(method)) return PsiReference.EMPTY_ARRAY
 
         val literalContent = lit.contents.trim()
         val parts = literalContent.split(Regex("(?i)\\s+as\\s+|\\s+"))

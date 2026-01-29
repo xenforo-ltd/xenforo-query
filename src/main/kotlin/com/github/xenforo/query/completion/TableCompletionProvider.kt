@@ -25,32 +25,19 @@ class TableCompletionProvider : CompletionProvider<CompletionParameters>() {
     ) {
         val project = parameters.position.project
         val settings = XenForoQuerySettings.getInstance(project)
-
-        // Check if feature is enabled
-        if (!settings.isTableCompletionEnabled) {
-            return
-        }
+        if (!settings.isTableCompletionEnabled) return
 
         val method = QueryChainResolver.findMethodReference(parameters.position) ?: return
         val methodName = method.name ?: return
-
-        if (!isTableAcceptingMethod(methodName)) {
-            return
-        }
-
-        // Only trigger for XenForo's Query Builder
-        if (!XenForoClassDetector.isXenForoQueryBuilder(method)) {
-            return
-        }
+        if (!isTableAcceptingMethod(methodName)) return
+        if (!XenForoClassDetector.isXenForoQueryBuilder(method)) return
 
         ApplicationManager.getApplication().runReadAction {
             populateCompletions(project, settings, result)
         }
     }
 
-    private fun isTableAcceptingMethod(methodName: String): Boolean {
-        return BuilderMethods.TableMethods.contains(methodName)
-    }
+    private fun isTableAcceptingMethod(methodName: String) = BuilderMethods.TableMethods.contains(methodName)
 
     private fun populateCompletions(
         project: Project,

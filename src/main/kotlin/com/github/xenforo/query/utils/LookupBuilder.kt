@@ -19,7 +19,6 @@ object LookupBuilder {
     private const val TABLE_PRIORITY = 100.0
     private const val COLUMN_PRIORITY = 90.0
 
-    // Cache keys - created once at class load time to enable proper caching
     private val CACHED_TABLES_KEY = Key.create<CachedValue<List<DasTable>>>("com.github.xenforo.query.CACHED_TABLES")
     private val CACHED_COLUMNS_KEY =
         Key.create<CachedValue<Map<String, List<DasColumn>>>>(
@@ -66,10 +65,6 @@ object LookupBuilder {
         return PrioritizedLookupElement.withPriority(builder, COLUMN_PRIORITY)
     }
 
-    /**
-     * Get all tables from all data sources, cached at project level.
-     * The cache is invalidated when any data source changes.
-     */
     fun getAllTables(project: Project): List<DasTable> {
         val manager = CachedValuesManager.getManager(project)
         return manager.getCachedValue(project, CACHED_TABLES_KEY, {
@@ -80,10 +75,6 @@ object LookupBuilder {
         }, false)
     }
 
-    /**
-     * Get columns for a specific table, cached at project level.
-     * Returns empty list if table is not found.
-     */
     fun getColumnsForTable(
         project: Project,
         tableName: String,
@@ -100,17 +91,10 @@ object LookupBuilder {
         return columnsMap[tableName.lowercase()] ?: emptyList()
     }
 
-    /**
-     * Find a table by name (case-insensitive).
-     */
     fun findTable(
         project: Project,
         tableName: String,
-    ): DasTable? {
-        return getAllTables(project).firstOrNull { it.name.equals(tableName, ignoreCase = true) }
-    }
-
-    // Static helper methods for fetching data - no lambdas captured
+    ): DasTable? = getAllTables(project).firstOrNull { it.name.equals(tableName, ignoreCase = true) }
 
     private fun fetchAllTables(project: Project): List<DasTable> {
         return DbUtil.getDataSources(project)
