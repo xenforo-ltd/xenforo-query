@@ -1,28 +1,23 @@
 package com.github.xenforo.query.reference
 
 import com.github.xenforo.query.constants.BuilderMethods
-import com.github.xenforo.query.settings.XenForoQuerySettings
 import com.github.xenforo.query.utils.LookupBuilder
-import com.github.xenforo.query.utils.QueryChainResolver
 import com.github.xenforo.query.utils.XenForoClassDetector
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiReference
 import com.intellij.psi.PsiReferenceProvider
 import com.intellij.util.ProcessingContext
-import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 class TableReferenceProvider : PsiReferenceProvider() {
     override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
-        val lit =
-            element as? StringLiteralExpression
-                ?: (element.parent as? StringLiteralExpression ?: return PsiReference.EMPTY_ARRAY)
+        val referenceContext = ReferenceUtils.getReferenceContext(element) ?: return PsiReference.EMPTY_ARRAY
 
-        val project = lit.project
-        val settings = XenForoQuerySettings.getInstance(project)
-        if (!settings.isTableReferencesEnabled) return PsiReference.EMPTY_ARRAY
+        if (!referenceContext.settings.isTableReferencesEnabled) return PsiReference.EMPTY_ARRAY
 
-        val method = QueryChainResolver.findMethodReference(lit) ?: return PsiReference.EMPTY_ARRAY
-        val methodName = method.name ?: return PsiReference.EMPTY_ARRAY
+        val lit = referenceContext.literal
+        val method = referenceContext.method
+        val methodName = referenceContext.methodName
+        val project = referenceContext.project
         if (!BuilderMethods.TableMethods.contains(methodName)) return PsiReference.EMPTY_ARRAY
         if (!XenForoClassDetector.isXenForoQueryBuilder(method)) return PsiReference.EMPTY_ARRAY
 

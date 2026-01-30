@@ -10,9 +10,8 @@ class ColumnPsiReference(element: PsiElement, private val targetColumn: DasColum
     PsiReferenceBase<PsiElement>(element, true) {
     override fun resolve(): PsiElement? {
         // Find the DbElement via the containing data source (non-deprecated API)
-        return DbUtil.getDataSources(project)
-            .asSequence()
-            .mapNotNull { dataSource -> dataSource.findElement(targetColumn) }
-            .firstOrNull()
+        return DbUtil.getDataSources(project).firstNotNullOfOrNull { dataSource ->
+            dataSource.findElement(targetColumn)
+        }
     }
 }

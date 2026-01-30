@@ -12,6 +12,10 @@
 - Fixed inspections to validate columns from tables that ARE in the database, even when other tables are not
 - Added enhanced closure resolution for joins inside closures
 
+### Changed
+
+- Switched to ktfmt for formatting (non-blocking)
+
 ## [1.1.3] - 2026-01-29
 
 ### Added

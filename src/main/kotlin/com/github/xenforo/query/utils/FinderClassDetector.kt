@@ -2,8 +2,6 @@ package com.github.xenforo.query.utils
 
 import com.github.xenforo.query.constants.FinderMethods
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiTreeUtil
-import com.jetbrains.php.lang.psi.elements.AssignmentExpression
 import com.jetbrains.php.lang.psi.elements.MethodReference
 import com.jetbrains.php.lang.psi.elements.PhpTypedElement
 import com.jetbrains.php.lang.psi.elements.Variable
@@ -93,32 +91,6 @@ object FinderClassDetector {
     }
 
     private fun resolveVariableAssignment(variable: Variable): PsiElement? {
-        if (!variable.isValid) return null
-
-        val variableName = variable.name
-        val containingFile = variable.containingFile ?: return null
-        if (!containingFile.isValid) return null
-
-        val assignments = PsiTreeUtil.findChildrenOfType(containingFile, AssignmentExpression::class.java)
-
-        var latestAssignment: PsiElement? = null
-        var latestOffset = -1
-
-        for (assignment in assignments) {
-            if (!assignment.isValid) continue
-
-            val assignedVar = assignment.variable
-            if (assignedVar is Variable && assignedVar.isValid && assignedVar.name == variableName) {
-                if (assignment.textOffset < variable.textOffset && assignment.textOffset > latestOffset) {
-                    val value = assignment.value
-                    if (value is MethodReference && value.isValid) {
-                        latestAssignment = value
-                        latestOffset = assignment.textOffset
-                    }
-                }
-            }
-        }
-
-        return latestAssignment
+        return VariableAssignmentResolver.resolveLatestMethodReference(variable)
     }
 }

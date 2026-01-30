@@ -9,7 +9,6 @@ import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.jetbrains.php.lang.psi.elements.ArrayHashElement
-import com.jetbrains.php.lang.psi.elements.AssignmentExpression
 import com.jetbrains.php.lang.psi.elements.Function
 import com.jetbrains.php.lang.psi.elements.MethodReference
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
@@ -177,51 +176,38 @@ object QueryChainResolver {
         val args = methodRef.parameterList?.parameters
 
         if (name != null && name in BuilderMethods.TableMethods && args?.isNotEmpty() == true) {
-            when {
-                name == "query" || name == "table" -> {
-                    extractTableAndAlias(args[0].text, tables, null, null)
-                }
-                name.lowercase().endsWith("join") && args.size >= 4 -> {
-                    val joinType =
-                        when (name.lowercase()) {
-                            "leftjoin" -> "LEFT JOIN"
-                            "rightjoin" -> "RIGHT JOIN"
-                            else -> "JOIN"
-                        }
-                    val leftCol = extractStringContent(args[1])
-                    val operator = args[2].text
-                    val rightCol = extractStringContent(args[3])
-                    val joinCondition = "$leftCol$operator$rightCol"
-                    extractTableAndAlias(args[0].text, tables, joinType, joinCondition)
-                }
+            extractTableFromTableMethod(name, args, tables)
+        }
+    }
+
+    private fun extractTableFromTableMethod(
+        methodName: String,
+        args: Array<PsiElement>,
+        tables: MutableList<TableContext>,
+    ) {
+        when {
+            methodName == "query" || methodName == "table" -> {
+                extractTableAndAlias(args[0].text, tables, null, null)
+            }
+            methodName.lowercase().endsWith("join") && args.size >= 4 -> {
+                val joinType =
+                    when (methodName.lowercase()) {
+                        "leftjoin" -> "LEFT JOIN"
+                        "rightjoin" -> "RIGHT JOIN"
+                        else -> "JOIN"
+                    }
+                val leftCol = extractStringContent(args[1])
+                val operator = args[2].text
+                val rightCol = extractStringContent(args[3])
+                val joinCondition = "$leftCol$operator$rightCol"
+                extractTableAndAlias(args[0].text, tables, joinType, joinCondition)
             }
         }
     }
 
     /** Finds the latest assignment to a variable that appears before its usage. */
     private fun resolveVariableAssignment(variable: Variable): PsiElement? {
-        val variableName = variable.name
-        val containingFile = variable.containingFile ?: return null
-
-        val assignments = PsiTreeUtil.findChildrenOfType(containingFile, AssignmentExpression::class.java)
-
-        var latestAssignment: PsiElement? = null
-        var latestOffset = -1
-
-        for (assignment in assignments) {
-            val assignedVar = assignment.variable
-            if (assignedVar is Variable && assignedVar.name == variableName) {
-                if (assignment.textOffset < variable.textOffset && assignment.textOffset > latestOffset) {
-                    val value = assignment.value
-                    if (value is MethodReference) {
-                        latestAssignment = value
-                        latestOffset = assignment.textOffset
-                    }
-                }
-            }
-        }
-
-        return latestAssignment
+        return VariableAssignmentResolver.resolveLatestMethodReference(variable)
     }
 
     /**
@@ -281,24 +267,7 @@ object QueryChainResolver {
                 if (isCalledOnParameter(classRef, paramName)) {
                     val args = methodRef.parameterList?.parameters
                     if (args?.isNotEmpty() == true) {
-                        when {
-                            methodName == "query" || methodName == "table" -> {
-                                extractTableAndAlias(args[0].text, tables, null, null)
-                            }
-                            methodName.lowercase().endsWith("join") && args.size >= 4 -> {
-                                val joinType =
-                                    when (methodName.lowercase()) {
-                                        "leftjoin" -> "LEFT JOIN"
-                                        "rightjoin" -> "RIGHT JOIN"
-                                        else -> "JOIN"
-                                    }
-                                val leftCol = extractStringContent(args[1])
-                                val operator = args[2].text
-                                val rightCol = extractStringContent(args[3])
-                                val joinCondition = "$leftCol$operator$rightCol"
-                                extractTableAndAlias(args[0].text, tables, joinType, joinCondition)
-                            }
-                        }
+                        extractTableFromTableMethod(methodName, args, tables)
                     }
                 }
             }

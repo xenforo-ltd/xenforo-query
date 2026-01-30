@@ -140,7 +140,7 @@ tasks {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
 
-    matching { it.name == "ktfmtCheck" }.configureEach {
+    matching { it.name.startsWith("ktfmtCheck") }.configureEach {
         enabled = false
     }
 

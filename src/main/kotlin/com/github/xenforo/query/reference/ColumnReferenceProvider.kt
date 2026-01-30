@@ -2,7 +2,6 @@ package com.github.xenforo.query.reference
 
 import com.github.xenforo.query.constants.BuilderMethods
 import com.github.xenforo.query.constants.FinderMethods
-import com.github.xenforo.query.settings.XenForoQuerySettings
 import com.github.xenforo.query.utils.FinderClassDetector
 import com.github.xenforo.query.utils.FinderEntityResolver
 import com.github.xenforo.query.utils.LookupBuilder
@@ -16,17 +15,13 @@ import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 class ColumnReferenceProvider : PsiReferenceProvider() {
     override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
-        val lit =
-            element as? StringLiteralExpression
-                ?: (element.parent as? StringLiteralExpression ?: return PsiReference.EMPTY_ARRAY)
+        val referenceContext = ReferenceUtils.getReferenceContext(element) ?: return PsiReference.EMPTY_ARRAY
 
-        val project = lit.project
-        val settings = XenForoQuerySettings.getInstance(project)
+        if (!referenceContext.settings.isColumnReferencesEnabled) return PsiReference.EMPTY_ARRAY
 
-        if (!settings.isColumnReferencesEnabled) return PsiReference.EMPTY_ARRAY
-
-        val method = QueryChainResolver.findMethodReference(lit) ?: return PsiReference.EMPTY_ARRAY
-        val methodName = method.name ?: return PsiReference.EMPTY_ARRAY
+        val lit = referenceContext.literal
+        val method = referenceContext.method
+        val methodName = referenceContext.methodName
 
         if (XenForoClassDetector.isXenForoQueryBuilder(method)) {
             return getQueryBuilderReferences(lit, method, methodName)

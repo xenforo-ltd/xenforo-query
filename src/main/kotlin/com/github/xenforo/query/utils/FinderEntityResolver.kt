@@ -5,7 +5,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.jetbrains.php.PhpIndex
-import com.jetbrains.php.lang.documentation.phpdoc.psi.PhpDocComment
 import com.jetbrains.php.lang.psi.elements.AssignmentExpression
 import com.jetbrains.php.lang.psi.elements.ClassConstantReference
 import com.jetbrains.php.lang.psi.elements.ClassReference
@@ -172,7 +171,7 @@ object FinderEntityResolver {
     private fun resolveEntityFromFinderClass(finderClass: PhpClass, project: Project): String? {
         if (!finderClass.isValid) return null
 
-        val docComment = finderClass.docComment as? PhpDocComment
+        val docComment = finderClass.docComment
         if (docComment == null || !docComment.isValid) return null
 
         val extendsPattern = Regex("""@extends\s+Finder\s*<\s*([^>]+)\s*>""")
@@ -279,32 +278,6 @@ object FinderEntityResolver {
     }
 
     private fun resolveVariableAssignment(variable: Variable): PsiElement? {
-        if (!variable.isValid) return null
-
-        val variableName = variable.name
-        val containingFile = variable.containingFile ?: return null
-        if (!containingFile.isValid) return null
-
-        val assignments = PsiTreeUtil.findChildrenOfType(containingFile, AssignmentExpression::class.java)
-
-        var latestAssignment: PsiElement? = null
-        var latestOffset = -1
-
-        for (assignment in assignments) {
-            if (!assignment.isValid) continue
-
-            val assignedVar = assignment.variable
-            if (assignedVar is Variable && assignedVar.isValid && assignedVar.name == variableName) {
-                if (assignment.textOffset < variable.textOffset && assignment.textOffset > latestOffset) {
-                    val value = assignment.value
-                    if (value is MethodReference && value.isValid) {
-                        latestAssignment = value
-                        latestOffset = assignment.textOffset
-                    }
-                }
-            }
-        }
-
-        return latestAssignment
+        return VariableAssignmentResolver.resolveLatestMethodReference(variable)
     }
 }
