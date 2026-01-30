@@ -514,6 +514,116 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
+     * Test forward chain resolution: joins defined AFTER select are still resolved.
+     * This verifies the resolver looks forward in the chain, not just backward.
+     */
+    fun testResolvesJoinAfterSelect() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread')
+                ->select('thread_id', 'title')
+                ->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id')
+                ->where('thread_id', 1);
+            """.trimIndent(),
+        )
+
+        // Find the select method - join comes AFTER it
+        val selectMethod = findMethodByName("select")
+        assertNotNull("Should find select method", selectMethod)
+
+        val tables = QueryChainResolver.resolveTables(selectMethod!!)
+
+        // Should find both tables even though join comes after select
+        assertEquals("Should find 2 tables including join after select", 2, tables.size)
+        assertEquals("xf_thread", tables[0].baseTable)
+        assertEquals("xf_user", tables[1].baseTable)
+        assertEquals("JOIN", tables[1].joinType)
+    }
+
+    /**
+     * Test forward chain resolution: multiple joins at different positions work.
+     * Joins can be scattered throughout the chain and should all be found.
+     */
+    fun testResolvesMultipleJoinsAfterSelect() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread AS t')
+                ->select('t.thread_id', 't.title')
+                ->join('xf_user AS u', 't.user_id', '=', 'u.user_id')
+                ->where('t.discussion_state', 'visible')
+                ->leftJoin('xf_node AS n', 't.node_id', '=', 'n.node_id')
+                ->orderBy('t.post_date')
+                ->rightJoin('xf_attachment AS a', 't.thread_id', '=', 'a.content_id')
+                ->limit(10);
+            """.trimIndent(),
+        )
+
+        // Find the select method - joins are both before and after it
+        val selectMethod = findMethodByName("select")
+        assertNotNull("Should find select method", selectMethod)
+
+        val tables = QueryChainResolver.resolveTables(selectMethod!!)
+
+        // Should find all 4 tables
+        assertEquals("Should find 4 tables with multiple joins", 4, tables.size)
+
+        assertEquals("xf_thread", tables[0].baseTable)
+        assertEquals("t", tables[0].alias)
+
+        assertEquals("xf_user", tables[1].baseTable)
+        assertEquals("u", tables[1].alias)
+        assertEquals("JOIN", tables[1].joinType)
+
+        assertEquals("xf_node", tables[2].baseTable)
+        assertEquals("n", tables[2].alias)
+        assertEquals("LEFT JOIN", tables[2].joinType)
+
+        assertEquals("xf_attachment", tables[3].baseTable)
+        assertEquals("a", tables[3].alias)
+        assertEquals("RIGHT JOIN", tables[3].joinType)
+    }
+
+    /**
+     * Test forward chain resolution: join after where works.
+     * This is a common pattern where conditions are added before joins.
+     */
+    fun testResolvesJoinAfterWhere() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_post AS p')
+                ->where('p.message_state', 'visible')
+                ->where('p.post_date', '>', 1234567890)
+                ->join('xf_thread AS t', 'p.thread_id', '=', 't.thread_id')
+                ->orderBy('p.post_date', 'DESC');
+            """.trimIndent(),
+        )
+
+        // Find the first where method - join comes AFTER it
+        val methods = findAllMethodReferences()
+        val firstWhere =
+            methods.find {
+                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("message_state") == true
+            }
+        assertNotNull("Should find first where method", firstWhere)
+
+        val tables = QueryChainResolver.resolveTables(firstWhere!!)
+
+        // Should find both tables even though join comes after where
+        assertEquals("Should find 2 tables including join after where", 2, tables.size)
+        assertEquals("xf_post", tables[0].baseTable)
+        assertEquals("p", tables[0].alias)
+        assertEquals("xf_thread", tables[1].baseTable)
+        assertEquals("t", tables[1].alias)
+        assertEquals("JOIN", tables[1].joinType)
+    }
+
+    /**
      * Helper method to find a MethodReference by method name.
      */
     private fun findMethodByName(name: String): MethodReference? {

@@ -1,7 +1,13 @@
 package com.github.xenforo.query.utils
 
 import com.github.xenforo.query.constants.BuilderMethods
+import com.intellij.database.util.DbUtil
+import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.psi.util.CachedValue
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.jetbrains.php.lang.psi.elements.ArrayHashElement
 import com.jetbrains.php.lang.psi.elements.AssignmentExpression
@@ -9,6 +15,7 @@ import com.jetbrains.php.lang.psi.elements.Function
 import com.jetbrains.php.lang.psi.elements.MethodReference
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 import com.jetbrains.php.lang.psi.elements.Variable
+import java.util.ArrayDeque
 
 object QueryChainResolver {
     data class TableContext(
@@ -18,64 +25,180 @@ object QueryChainResolver {
         val joinCondition: String? = null,
     )
 
+    /**
+     * Resolves all tables in the query builder chain, including those defined after the start method.
+     * Uses two-phase resolution: finds the chain root, then traverses forward to collect all tables.
+     * Results are cached at the file level for performance.
+     */
     fun resolveTables(startMethod: MethodReference): List<TableContext> {
-        val tables = mutableListOf<TableContext>()
-        resolveTablesRecursive(startMethod, tables, mutableSetOf())
-        return tables.reversed()
+        val project = startMethod.project
+        val file = startMethod.containingFile ?: return emptyList()
+        
+        // Store the offset of startMethod to find the chain root again inside the provider
+        // This avoids capturing PSI elements in the lambda
+        val startMethodOffset = startMethod.textOffset
+        
+        // Create a unique cache key for this specific chain (based on the start method offset)
+        val cacheKey = Key.create<CachedValue<List<TableContext>>>("xenforo.query.chain.tables.cache.$startMethodOffset")
+        
+        return CachedValuesManager.getManager(project).getCachedValue(
+            file,
+            cacheKey,
+            {
+                // Find the element at the stored offset and traverse to find root
+                // This is done INSIDE the lambda to avoid capturing PSI from outside
+                var current: PsiElement? = file.findElementAt(startMethodOffset)
+                
+                // Walk up to find the MethodReference at this position
+                while (current != null && current !is MethodReference) {
+                    current = current.parent
+                }
+                
+                val startRef = current as? MethodReference
+                val root = if (startRef != null) findChainRoot(startRef) else null
+                
+                // Collect all tables from root using forward traversal
+                val tables = mutableListOf<TableContext>()
+                val visited = mutableSetOf<PsiElement>()
+                collectAllTablesFromRoot(root, tables, visited)
+                
+                // Create dependencies for cache invalidation
+                val dependencies = mutableListOf<Any>(file)
+                try {
+                    dependencies.addAll(DbUtil.getDataSources(project).mapNotNull { it.modificationTracker })
+                } catch (e: Exception) {
+                    // Database plugin not available, ignore
+                }
+                
+                CachedValueProvider.Result.create(tables.toList(), dependencies)
+            },
+            false
+        )
     }
 
-    private fun resolveTablesRecursive(
-        element: PsiElement?,
+    /**
+     * Finds the root element of a method chain by walking backwards through classReferences.
+     */
+    private fun findChainRoot(startElement: PsiElement?): PsiElement? {
+        var current = startElement
+        while (current is MethodReference && current.classReference != null) {
+            current = current.classReference
+        }
+        return current
+    }
+
+    /**
+     * Collects all tables from the chain root using forward traversal.
+     * Uses a queue-based approach to handle branching (e.g., when a method is used multiple times).
+     */
+    private fun collectAllTablesFromRoot(
+        root: PsiElement?,
         tables: MutableList<TableContext>,
         visited: MutableSet<PsiElement>,
     ) {
-        if (element == null || element in visited) return
-        visited.add(element)
-
-        when (element) {
-            is MethodReference -> {
-                val name = element.name
-                val args = element.parameterList?.parameters
-
-                if (name != null && name in BuilderMethods.TableMethods && args?.isNotEmpty() == true) {
-                    when {
-                        name == "query" || name == "table" -> {
-                            extractTableAndAlias(args[0].text, tables, null, null)
-                        }
-
-                        name.lowercase().endsWith("join") && args.size >= 4 -> {
-                            val joinType =
-                                when (name.lowercase()) {
-                                    "leftjoin" -> "LEFT JOIN"
-                                    "rightjoin" -> "RIGHT JOIN"
-                                    else -> "JOIN"
-                                }
-                            val leftCol = extractStringContent(args[1])
-                            val operator = args[2].text
-                            val rightCol = extractStringContent(args[3])
-                            val joinCondition = "$leftCol$operator$rightCol"
-                            extractTableAndAlias(args[0].text, tables, joinType, joinCondition)
+        if (root == null) return
+        
+        val queue = ArrayDeque<PsiElement>()
+        queue.add(root)
+        
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            if (current in visited) continue
+            visited.add(current)
+            
+            when (current) {
+                is MethodReference -> {
+                    // Extract table if this is a table-defining method
+                    extractTableFromMethod(current, tables)
+                    
+                    // Find all methods that use this as their classReference (forward traversal)
+                    val nextMethods = findNextMethodsInChain(current, visited)
+                    queue.addAll(nextMethods)
+                    
+                    // Also continue backward traversal for variable assignments
+                    if (current.classReference != null) {
+                        queue.add(current.classReference!!)
+                    }
+                }
+                is com.jetbrains.php.lang.psi.elements.ClassReference -> {
+                    // For class references (like \XF), find methods that reference this class
+                    // This handles the case where chain starts with \XF::query(...)
+                    val nextMethods = findNextMethodsInChain(current, visited)
+                    queue.addAll(nextMethods)
+                }
+                is Variable -> {
+                    // Try to resolve variable assignment
+                    val closureMethod = resolveClosureParameterToMethod(current)
+                    if (closureMethod != null) {
+                        // For closures, we'll handle separately in Issue 2
+                        // For now, just add the parent method
+                        queue.add(closureMethod)
+                    } else {
+                        val resolved = resolveVariableAssignment(current)
+                        if (resolved != null && resolved !in visited) {
+                            // Find the root of the resolved chain to maintain correct order
+                            // If resolved is a MethodReference, find its root to process from the beginning
+                            val resolvedRoot = if (resolved is MethodReference) {
+                                findChainRoot(resolved)
+                            } else {
+                                resolved
+                            }
+                            queue.add(resolvedRoot)
                         }
                     }
                 }
-
-                resolveTablesRecursive(element.classReference, tables, visited)
-            }
-
-            is Variable -> {
-                val closureMethod = resolveClosureParameterToMethod(element)
-                if (closureMethod != null) {
-                    resolveTablesRecursive(closureMethod, tables, visited)
-                } else {
-                    val resolved = resolveVariableAssignment(element)
-                    if (resolved != null) {
-                        resolveTablesRecursive(resolved, tables, visited)
-                    }
+                is StringLiteralExpression -> {
+                    extractTableAndAlias(current.contents, tables, null, null)
                 }
             }
+        }
+    }
 
-            is StringLiteralExpression -> {
-                extractTableAndAlias(element.contents, tables, null, null)
+    /**
+     * Finds all MethodReferences in the file that use the given element as their classReference.
+     * This enables forward traversal of the method chain.
+     */
+    private fun findNextMethodsInChain(
+        element: PsiElement,
+        visited: MutableSet<PsiElement>,
+    ): List<MethodReference> {
+        val containingFile = element.containingFile ?: return emptyList()
+        
+        // Find all MethodReferences where this element is their classReference
+        return PsiTreeUtil.findChildrenOfType(containingFile, MethodReference::class.java)
+            .filter { methodRef ->
+                methodRef.classReference == element && methodRef !in visited
+            }
+    }
+
+    /**
+     * Extracts table information from a method call if it's a table-defining method.
+     */
+    private fun extractTableFromMethod(
+        methodRef: MethodReference,
+        tables: MutableList<TableContext>,
+    ) {
+        val name = methodRef.name
+        val args = methodRef.parameterList?.parameters
+
+        if (name != null && name in BuilderMethods.TableMethods && args?.isNotEmpty() == true) {
+            when {
+                name == "query" || name == "table" -> {
+                    extractTableAndAlias(args[0].text, tables, null, null)
+                }
+                name.lowercase().endsWith("join") && args.size >= 4 -> {
+                    val joinType =
+                        when (name.lowercase()) {
+                            "leftjoin" -> "LEFT JOIN"
+                            "rightjoin" -> "RIGHT JOIN"
+                            else -> "JOIN"
+                        }
+                    val leftCol = extractStringContent(args[1])
+                    val operator = args[2].text
+                    val rightCol = extractStringContent(args[3])
+                    val joinCondition = "$leftCol$operator$rightCol"
+                    extractTableAndAlias(args[0].text, tables, joinType, joinCondition)
+                }
             }
         }
     }
