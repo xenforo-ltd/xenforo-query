@@ -60,21 +60,29 @@ class UnknownColumnInspection : LocalInspectionTool() {
 
                 if (columnName.isNullOrEmpty()) return
 
+                // Track which tables we can actually validate against
+                var foundTablesInDb = 0
+
                 val availableColumns =
                     tableContexts.flatMap { ctx ->
+                        // If alias is specified, only check tables that match the alias
                         if (alias != null && ctx.alias != alias && ctx.baseTable != alias) {
                             return@flatMap emptyList()
                         }
 
-                        val table =
-                            LookupBuilder.findTable(project, ctx.baseTable)
-                                ?: return@flatMap emptyList()
-
-                        LookupBuilder.getColumnsForTable(project, table.name).map { it.name }
+                        val table = LookupBuilder.findTable(project, ctx.baseTable)
+                        if (table != null) {
+                            foundTablesInDb++
+                            LookupBuilder.getColumnsForTable(project, table.name).map { it.name }
+                        } else {
+                            // Table not found in DB - skip this table but continue with others
+                            emptyList()
+                        }
                     }
 
-                // Can't validate if no tables resolved - avoid false positives
-                if (availableColumns.isEmpty() && tableContexts.isNotEmpty()) return
+                // Can't validate if no tables can be found in the database
+                // This avoids false positives when the database isn't configured
+                if (foundTablesInDb == 0) return
 
                 if (!availableColumns.any { it.equals(columnName, ignoreCase = true) }) {
                     holder.registerProblem(

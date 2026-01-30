@@ -8,6 +8,9 @@
 
 - Fixed false positive "Unknown column" warnings for keys inside nested arrays (e.g., `json_encode(['key' => ...])`)
 - Fixed inspections, completions and Go To Definition for `upsert()` second and third argument arrays where values are column names
+- Fixed table resolution for joins defined after select/where clauses
+- Fixed inspections to validate columns from tables that ARE in the database, even when other tables are not
+- Added enhanced closure resolution for joins inside closures
 
 ## [1.1.3] - 2026-01-29
 
