@@ -133,12 +133,9 @@ object QueryChainResolver {
                     val closureTables = resolveClosureWithTables(current)
                     if (closureTables != null) {
                         // This is a closure parameter - add all tables from closure resolution
+                        // Note: resolveClosureWithTables already includes tables from the outer chain,
+                        // so we don't need to continue traversing the parent method chain
                         tables.addAll(closureTables)
-                        // Also continue traversing the parent method chain
-                        val parentMethod = resolveClosureParameterToMethod(current)
-                        if (parentMethod != null && parentMethod !in visited) {
-                            queue.add(parentMethod)
-                        }
                     } else {
                         // Not a closure parameter - try variable assignment resolution
                         val resolved = resolveVariableAssignment(current)
@@ -241,23 +238,6 @@ object QueryChainResolver {
     }
 
     /**
-     * When a variable is a closure parameter, resolves to the method call containing the closure.
-     *
-     * Example: `->where(function (Builder $query) { $query->... })` - when resolving `$query`,
-     * this returns the `->where()` MethodReference.
-     */
-    private fun resolveClosureParameterToMethod(variable: Variable): MethodReference? {
-        val variableName = variable.name
-
-        val enclosingFunction = PsiTreeUtil.getParentOfType(variable, Function::class.java) ?: return null
-
-        val isParameter = enclosingFunction.parameters.any { param -> param.name == variableName }
-        if (!isParameter) return null
-
-        return PsiTreeUtil.getParentOfType(enclosingFunction, MethodReference::class.java)
-    }
-
-    /**
      * Enhanced closure resolution that finds tables from both the outer chain and inside the closure.
      *
      * When a join is made inside a closure (e.g., $query->join(...) inside a where() closure),
@@ -317,7 +297,7 @@ object QueryChainResolver {
             if (methodName != null && methodName in BuilderMethods.TableMethods) {
                 // Check if this method is called on the closure parameter
                 val classRef = methodRef.classReference
-                if (classRef is Variable && classRef.name == paramName) {
+                if (isCalledOnParameter(classRef, paramName)) {
                     val args = methodRef.parameterList?.parameters
                     if (args?.isNotEmpty() == true) {
                         when {
@@ -342,6 +322,26 @@ object QueryChainResolver {
                 }
             }
         }
+    }
+
+    /**
+     * Checks if a classReference represents a call on the specified parameter.
+     * Handles cases where classRef might be a Variable or a simple variable expression.
+     */
+    private fun isCalledOnParameter(
+        classRef: PsiElement?,
+        paramName: String,
+    ): Boolean {
+        if (classRef == null) return false
+
+        // Direct Variable check
+        if (classRef is Variable && classRef.name == paramName) {
+            return true
+        }
+
+        // Fallback: check if the text (without $) matches the parameter name
+        val text = classRef.text?.trimStart('$')?.trim()
+        return text == paramName
     }
 
     private fun extractTableAndAlias(

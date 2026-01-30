@@ -761,10 +761,13 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         )
 
         // Find the inner where method that uses the joined table
+        // We need to find the where method whose classReference is a Variable (inside closure),
+        // not the outer where whose classReference is a MethodReference
         val methods = findAllMethodReferences()
         val innerWhere =
             methods.find {
                 it.name == "where" &&
+                    it.classReference is Variable &&
                     it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
             }
         assertNotNull("Should find inner where method", innerWhere)
@@ -805,10 +808,13 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         )
 
         // Find the innermost where that uses 'username'
+        // We need to find the where method whose classReference is a Variable (inside closure),
+        // not the outer where methods whose classReference is a MethodReference
         val methods = findAllMethodReferences()
         val innermostWhere =
             methods.find {
                 it.name == "where" &&
+                    it.classReference is Variable &&
                     it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
             }
         assertNotNull("Should find innermost where method", innermostWhere)
