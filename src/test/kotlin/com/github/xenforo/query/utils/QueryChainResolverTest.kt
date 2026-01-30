@@ -4,6 +4,7 @@ import com.github.xenforo.query.XenForoQueryTestCase
 import com.intellij.psi.util.PsiTreeUtil
 import com.jetbrains.php.lang.psi.elements.MethodReference
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
+import com.jetbrains.php.lang.psi.elements.Variable
 
 /**
  * Tests for QueryChainResolver utility class.
@@ -728,5 +729,112 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val thirdArgValue = stringLiterals.find { it.contents == "last_seen" &&
             QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.VALUE }
         assertNotNull("Should find last_seen as VALUE in third arg", thirdArgValue)
+    }
+
+    /**
+     * Test enhanced closure resolution: join inside closure is resolved.
+     * This verifies that when a join is added inside a closure, it's available
+     * for completions/inspections within that closure.
+     */
+    fun testResolvesJoinInsideClosure() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_thread AS t')
+                ->where(function (${'$'}query) {
+                    ${'$'}query->join('xf_user AS u', 't.user_id', '=', 'u.user_id');
+                    ${'$'}query->where('u.username', 'admin');
+                });
+            """.trimIndent(),
+        )
+
+        // Find the inner where method that uses the joined table
+        val methods = findAllMethodReferences()
+        val innerWhere =
+            methods.find {
+                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
+            }
+        assertNotNull("Should find inner where method", innerWhere)
+
+        val tables = QueryChainResolver.resolveTables(innerWhere!!)
+
+        // Should find both the outer table and the joined table from inside the closure
+        assertEquals("Should find 2 tables including join from closure", 2, tables.size)
+        
+        // Verify we have both tables
+        val threadTable = tables.find { it.baseTable == "xf_thread" }
+        val userTable = tables.find { it.baseTable == "xf_user" }
+        
+        assertNotNull("Should find xf_thread from outer chain", threadTable)
+        assertNotNull("Should find xf_user from closure join", userTable)
+        assertEquals("t", threadTable?.alias)
+        assertEquals("u", userTable?.alias)
+    }
+
+    /**
+     * Test enhanced closure resolution: nested closures with joins at different levels.
+     * Verifies that joins from both outer and inner closures are all available.
+     */
+    fun testResolvesNestedClosuresWithJoins() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            \XF::query('xf_post AS p')
+                ->where(function (${'$'}query) {
+                    ${'$'}query->join('xf_thread AS t', 'p.thread_id', '=', 't.thread_id');
+                    ${'$'}query->where(function (${'$'}query) {
+                        ${'$'}query->join('xf_user AS u', 't.user_id', '=', 'u.user_id');
+                        ${'$'}query->where('u.username', 'admin');
+                    });
+                });
+            """.trimIndent(),
+        )
+
+        // Find the innermost where that uses 'username'
+        val methods = findAllMethodReferences()
+        val innermostWhere =
+            methods.find {
+                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
+            }
+        assertNotNull("Should find innermost where method", innermostWhere)
+
+        val tables = QueryChainResolver.resolveTables(innermostWhere!!)
+
+        // Should find all 3 tables from the nested closures
+        assertEquals("Should find 3 tables from nested closures", 3, tables.size)
+        
+        val postTable = tables.find { it.baseTable == "xf_post" }
+        val threadTable = tables.find { it.baseTable == "xf_thread" }
+        val userTable = tables.find { it.baseTable == "xf_user" }
+        
+        assertNotNull("Should find xf_post", postTable)
+        assertNotNull("Should find xf_thread from outer closure", threadTable)
+        assertNotNull("Should find xf_user from inner closure", userTable)
+    }
+
+    /**
+     * Test that resolveClosureWithTables returns null for non-closure variables.
+     * This ensures we don't incorrectly treat regular variables as closures.
+     */
+    fun testResolveClosureWithTablesReturnsNullForNonClosures() {
+        if (!isPhpPluginLoaded()) return
+
+        configureByPhpText(
+            """
+            ${'$'}name = 'test';
+            \XF::query('xf_user')->where('username', ${'$'}name);
+            """.trimIndent(),
+        )
+
+        // Find the Variable for ${'$'}name (which is NOT a closure parameter)
+        val variables = PsiTreeUtil.findChildrenOfType(myFixture.file, Variable::class.java)
+        val nameVar = variables.find { it.name == "name" && it.text == "${'$'}name" }
+        assertNotNull("Should find ${'$'}name variable", nameVar)
+
+        // Should return null since it's not a closure parameter
+        val result = QueryChainResolver.resolveClosureWithTables(nameVar!!)
+        assertNull("Should return null for non-closure variable", result)
     }
 }

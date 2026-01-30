@@ -127,17 +127,21 @@ object QueryChainResolver {
                     queue.addAll(nextMethods)
                 }
                 is Variable -> {
-                    // Try to resolve variable assignment
-                    val closureMethod = resolveClosureParameterToMethod(current)
-                    if (closureMethod != null) {
-                        // For closures, we'll handle separately in Issue 2
-                        // For now, just add the parent method
-                        queue.add(closureMethod)
+                    // First, try enhanced closure resolution (for closure parameters)
+                    val closureTables = resolveClosureWithTables(current)
+                    if (closureTables != null) {
+                        // This is a closure parameter - add all tables from closure resolution
+                        tables.addAll(closureTables)
+                        // Also continue traversing the parent method chain
+                        val parentMethod = resolveClosureParameterToMethod(current)
+                        if (parentMethod != null && parentMethod !in visited) {
+                            queue.add(parentMethod)
+                        }
                     } else {
+                        // Not a closure parameter - try variable assignment resolution
                         val resolved = resolveVariableAssignment(current)
                         if (resolved != null && resolved !in visited) {
                             // Find the root of the resolved chain to maintain correct order
-                            // If resolved is a MethodReference, find its root to process from the beginning
                             val resolvedRoot = if (resolved is MethodReference) {
                                 findChainRoot(resolved)
                             } else {
@@ -246,6 +250,92 @@ object QueryChainResolver {
         if (!isParameter) return null
 
         return PsiTreeUtil.getParentOfType(enclosingFunction, MethodReference::class.java)
+    }
+
+    /**
+     * Enhanced closure resolution that finds tables from both the outer chain and inside the closure.
+     * 
+     * When a join is made inside a closure (e.g., $query->join(...) inside a where() closure),
+     * this method merges tables from:
+     * 1. The chain leading to the method containing the closure
+     * 2. Any table-defining calls (join, etc.) made on the closure parameter inside the closure
+     */
+    fun resolveClosureWithTables(variable: Variable): List<TableContext>? {
+        val variableName = variable.name
+
+        // Find the enclosing closure/function
+        val enclosingFunction = PsiTreeUtil.getParentOfType(variable, Function::class.java) ?: return null
+        
+        // Verify this variable is actually a parameter of the closure
+        val isParameter = enclosingFunction.parameters.any { param -> param.name == variableName }
+        if (!isParameter) return null
+
+        // Get the method that contains this closure (e.g., the ->where() method)
+        val parentMethod = PsiTreeUtil.getParentOfType(enclosingFunction, MethodReference::class.java)
+            ?: return null
+
+        // Phase 1: Get tables from the chain leading to the parent method
+        val outerTables = resolveTables(parentMethod).toMutableList()
+
+        // Phase 2: Scan the closure body for any table-defining calls on this parameter
+        val closureTables = mutableListOf<TableContext>()
+        scanClosureForTables(enclosingFunction, variableName, closureTables)
+
+        // Phase 3: Merge tables (closure tables override outer tables with same alias)
+        val tableMap = outerTables.associateBy { it.alias ?: it.baseTable }.toMutableMap()
+        closureTables.forEach { ctx ->
+            val key = ctx.alias ?: ctx.baseTable
+            tableMap[key] = ctx
+        }
+
+        return tableMap.values.toList()
+    }
+
+    /**
+     * Scans a closure/function body for table-defining method calls on a specific variable.
+     * 
+     * This finds calls like $query->join('xf_user', ...) inside the closure body.
+     */
+    private fun scanClosureForTables(
+        function: Function,
+        paramName: String,
+        tables: MutableList<TableContext>
+    ) {
+        // Find all method calls inside this function
+        val methodCalls = PsiTreeUtil.findChildrenOfType(function, MethodReference::class.java)
+        
+        methodCalls.forEach { methodRef ->
+            val methodName = methodRef.name
+            
+            // Only process table-defining methods
+            if (methodName != null && methodName in BuilderMethods.TableMethods) {
+                // Check if this method is called on the closure parameter
+                val classRef = methodRef.classReference
+                if (classRef is Variable && classRef.name == paramName) {
+                    val args = methodRef.parameterList?.parameters
+                    if (args?.isNotEmpty() == true) {
+                        when {
+                            methodName == "query" || methodName == "table" -> {
+                                extractTableAndAlias(args[0].text, tables, null, null)
+                            }
+                            methodName.lowercase().endsWith("join") && args.size >= 4 -> {
+                                val joinType =
+                                    when (methodName.lowercase()) {
+                                        "leftjoin" -> "LEFT JOIN"
+                                        "rightjoin" -> "RIGHT JOIN"
+                                        else -> "JOIN"
+                                    }
+                                val leftCol = extractStringContent(args[1])
+                                val operator = args[2].text
+                                val rightCol = extractStringContent(args[3])
+                                val joinCondition = "$leftCol$operator$rightCol"
+                                extractTableAndAlias(args[0].text, tables, joinType, joinCondition)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun extractTableAndAlias(
