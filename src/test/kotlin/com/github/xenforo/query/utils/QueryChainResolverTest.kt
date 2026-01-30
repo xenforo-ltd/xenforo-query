@@ -609,7 +609,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val methods = findAllMethodReferences()
         val firstWhere =
             methods.find {
-                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("message_state") == true
+                it.name == "where" &&
+                    it.parameterList?.parameters?.getOrNull(0)?.text?.contains("message_state") == true
             }
         assertNotNull("Should find first where method", firstWhere)
 
@@ -655,9 +656,10 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val secondArgValues = stringLiterals.filter { it.contents == "username" || it.contents == "email" }
 
         // At least one should be detected as a value in the second argument
-        val foundValue = secondArgValues.any { lit ->
-            QueryChainResolver.isStringLiteralArrayValueInColumnArray(lit)
-        }
+        val foundValue =
+            secondArgValues.any { lit ->
+                QueryChainResolver.isStringLiteralArrayValueInColumnArray(lit)
+            }
 
         assertTrue("Should detect strings as array values in upsert second arg", foundValue)
     }
@@ -716,18 +718,27 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val stringLiterals = PsiTreeUtil.findChildrenOfType(myFixture.file, StringLiteralExpression::class.java)
 
         // Find 'username' in first argument (should be KEY)
-        val firstArgKey = stringLiterals.find { it.contents == "username" &&
-            QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.KEY }
+        val firstArgKey =
+            stringLiterals.find {
+                it.contents == "username" &&
+                    QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.KEY
+            }
         assertNotNull("Should find username as KEY in first arg", firstArgKey)
 
         // Find 'username' in second argument (should be VALUE)
-        val secondArgValue = stringLiterals.find { it.contents == "username" &&
-            QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.VALUE }
+        val secondArgValue =
+            stringLiterals.find {
+                it.contents == "username" &&
+                    QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.VALUE
+            }
         assertNotNull("Should find username as VALUE in second arg", secondArgValue)
 
         // Find 'last_seen' in third argument (should be VALUE)
-        val thirdArgValue = stringLiterals.find { it.contents == "last_seen" &&
-            QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.VALUE }
+        val thirdArgValue =
+            stringLiterals.find {
+                it.contents == "last_seen" &&
+                    QueryChainResolver.getColumnArrayPosition(it) == QueryChainResolver.ColumnArrayPosition.VALUE
+            }
         assertNotNull("Should find last_seen as VALUE in third arg", thirdArgValue)
     }
 
@@ -753,7 +764,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val methods = findAllMethodReferences()
         val innerWhere =
             methods.find {
-                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
+                it.name == "where" &&
+                    it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
             }
         assertNotNull("Should find inner where method", innerWhere)
 
@@ -761,11 +773,11 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
 
         // Should find both the outer table and the joined table from inside the closure
         assertEquals("Should find 2 tables including join from closure", 2, tables.size)
-        
+
         // Verify we have both tables
         val threadTable = tables.find { it.baseTable == "xf_thread" }
         val userTable = tables.find { it.baseTable == "xf_user" }
-        
+
         assertNotNull("Should find xf_thread from outer chain", threadTable)
         assertNotNull("Should find xf_user from closure join", userTable)
         assertEquals("t", threadTable?.alias)
@@ -796,7 +808,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val methods = findAllMethodReferences()
         val innermostWhere =
             methods.find {
-                it.name == "where" && it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
+                it.name == "where" &&
+                    it.parameterList?.parameters?.getOrNull(0)?.text?.contains("username") == true
             }
         assertNotNull("Should find innermost where method", innermostWhere)
 
@@ -804,11 +817,11 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
 
         // Should find all 3 tables from the nested closures
         assertEquals("Should find 3 tables from nested closures", 3, tables.size)
-        
+
         val postTable = tables.find { it.baseTable == "xf_post" }
         val threadTable = tables.find { it.baseTable == "xf_thread" }
         val userTable = tables.find { it.baseTable == "xf_user" }
-        
+
         assertNotNull("Should find xf_post", postTable)
         assertNotNull("Should find xf_thread from outer closure", threadTable)
         assertNotNull("Should find xf_user from inner closure", userTable)

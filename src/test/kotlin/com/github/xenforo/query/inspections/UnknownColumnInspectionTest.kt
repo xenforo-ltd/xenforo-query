@@ -10,7 +10,6 @@ import com.github.xenforo.query.XenForoQueryTestCase
  * the inspection is properly registered and doesn't throw errors during analysis.
  */
 class UnknownColumnInspectionTest : XenForoQueryTestCase() {
-
     /**
      * Test that the inspection can be instantiated without errors.
      */

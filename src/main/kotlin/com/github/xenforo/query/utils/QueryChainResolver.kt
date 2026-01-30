@@ -4,7 +4,6 @@ import com.github.xenforo.query.constants.BuilderMethods
 import com.intellij.database.util.DbUtil
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
 import com.intellij.psi.util.CachedValue
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
@@ -33,14 +32,17 @@ object QueryChainResolver {
     fun resolveTables(startMethod: MethodReference): List<TableContext> {
         val project = startMethod.project
         val file = startMethod.containingFile ?: return emptyList()
-        
+
         // Store the offset of startMethod to find the chain root again inside the provider
         // This avoids capturing PSI elements in the lambda
         val startMethodOffset = startMethod.textOffset
-        
+
         // Create a unique cache key for this specific chain (based on the start method offset)
-        val cacheKey = Key.create<CachedValue<List<TableContext>>>("xenforo.query.chain.tables.cache.$startMethodOffset")
-        
+        val cacheKey =
+            Key.create<CachedValue<List<TableContext>>>(
+                "xenforo.query.chain.tables.cache.$startMethodOffset",
+            )
+
         return CachedValuesManager.getManager(project).getCachedValue(
             file,
             cacheKey,
@@ -48,31 +50,31 @@ object QueryChainResolver {
                 // Find the element at the stored offset and traverse to find root
                 // This is done INSIDE the lambda to avoid capturing PSI from outside
                 var current: PsiElement? = file.findElementAt(startMethodOffset)
-                
+
                 // Walk up to find the MethodReference at this position
                 while (current != null && current !is MethodReference) {
                     current = current.parent
                 }
-                
-                val startRef = current as? MethodReference
+
+                val startRef = current
                 val root = if (startRef != null) findChainRoot(startRef) else null
-                
+
                 // Collect all tables from root using forward traversal
                 val tables = mutableListOf<TableContext>()
                 val visited = mutableSetOf<PsiElement>()
                 collectAllTablesFromRoot(root, tables, visited)
-                
+
                 // Create dependencies for cache invalidation
                 val dependencies = mutableListOf<Any>(file)
                 try {
                     dependencies.addAll(DbUtil.getDataSources(project).mapNotNull { it.modificationTracker })
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Database plugin not available, ignore
                 }
-                
+
                 CachedValueProvider.Result.create(tables.toList(), dependencies)
             },
-            false
+            false,
         )
     }
 
@@ -97,24 +99,24 @@ object QueryChainResolver {
         visited: MutableSet<PsiElement>,
     ) {
         if (root == null) return
-        
+
         val queue = ArrayDeque<PsiElement>()
         queue.add(root)
-        
+
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
             if (current in visited) continue
             visited.add(current)
-            
+
             when (current) {
                 is MethodReference -> {
                     // Extract table if this is a table-defining method
                     extractTableFromMethod(current, tables)
-                    
+
                     // Find all methods that use this as their classReference (forward traversal)
                     val nextMethods = findNextMethodsInChain(current, visited)
                     queue.addAll(nextMethods)
-                    
+
                     // Also continue backward traversal for variable assignments
                     if (current.classReference != null) {
                         queue.add(current.classReference!!)
@@ -142,12 +144,15 @@ object QueryChainResolver {
                         val resolved = resolveVariableAssignment(current)
                         if (resolved != null && resolved !in visited) {
                             // Find the root of the resolved chain to maintain correct order
-                            val resolvedRoot = if (resolved is MethodReference) {
-                                findChainRoot(resolved)
-                            } else {
-                                resolved
+                            val resolvedRoot =
+                                if (resolved is MethodReference) {
+                                    findChainRoot(resolved)
+                                } else {
+                                    resolved
+                                }
+                            if (resolvedRoot != null) {
+                                queue.add(resolvedRoot)
                             }
-                            queue.add(resolvedRoot)
                         }
                     }
                 }
@@ -167,7 +172,7 @@ object QueryChainResolver {
         visited: MutableSet<PsiElement>,
     ): List<MethodReference> {
         val containingFile = element.containingFile ?: return emptyList()
-        
+
         // Find all MethodReferences where this element is their classReference
         return PsiTreeUtil.findChildrenOfType(containingFile, MethodReference::class.java)
             .filter { methodRef ->
@@ -254,7 +259,7 @@ object QueryChainResolver {
 
     /**
      * Enhanced closure resolution that finds tables from both the outer chain and inside the closure.
-     * 
+     *
      * When a join is made inside a closure (e.g., $query->join(...) inside a where() closure),
      * this method merges tables from:
      * 1. The chain leading to the method containing the closure
@@ -265,14 +270,15 @@ object QueryChainResolver {
 
         // Find the enclosing closure/function
         val enclosingFunction = PsiTreeUtil.getParentOfType(variable, Function::class.java) ?: return null
-        
+
         // Verify this variable is actually a parameter of the closure
         val isParameter = enclosingFunction.parameters.any { param -> param.name == variableName }
         if (!isParameter) return null
 
         // Get the method that contains this closure (e.g., the ->where() method)
-        val parentMethod = PsiTreeUtil.getParentOfType(enclosingFunction, MethodReference::class.java)
-            ?: return null
+        val parentMethod =
+            PsiTreeUtil.getParentOfType(enclosingFunction, MethodReference::class.java)
+                ?: return null
 
         // Phase 1: Get tables from the chain leading to the parent method
         val outerTables = resolveTables(parentMethod).toMutableList()
@@ -293,20 +299,20 @@ object QueryChainResolver {
 
     /**
      * Scans a closure/function body for table-defining method calls on a specific variable.
-     * 
+     *
      * This finds calls like $query->join('xf_user', ...) inside the closure body.
      */
     private fun scanClosureForTables(
         function: Function,
         paramName: String,
-        tables: MutableList<TableContext>
+        tables: MutableList<TableContext>,
     ) {
         // Find all method calls inside this function
         val methodCalls = PsiTreeUtil.findChildrenOfType(function, MethodReference::class.java)
-        
+
         methodCalls.forEach { methodRef ->
             val methodName = methodRef.name
-            
+
             // Only process table-defining methods
             if (methodName != null && methodName in BuilderMethods.TableMethods) {
                 // Check if this method is called on the closure parameter
@@ -384,9 +390,9 @@ object QueryChainResolver {
     }
 
     enum class ColumnArrayPosition {
-        KEY,      // First arg of upsert/update/insert - array keys are columns
-        VALUE,    // Second/third arg of upsert - array values are columns
-        NONE,     // Not a column array position
+        KEY, // First arg of upsert/update/insert - array keys are columns
+        VALUE, // Second/third arg of upsert - array values are columns
+        NONE, // Not a column array position
     }
 
     /**
@@ -408,27 +414,32 @@ object QueryChainResolver {
 
         // Find the containing array creation first
         val arrayCreation =
-            PsiTreeUtil.getParentOfType(literal, com.jetbrains.php.lang.psi.elements.ArrayCreationExpression::class.java)
-                ?: return ColumnArrayPosition.NONE
+            PsiTreeUtil.getParentOfType(
+                literal,
+                com.jetbrains.php.lang.psi.elements.ArrayCreationExpression::class.java,
+            ) ?: return ColumnArrayPosition.NONE
 
         // Check if the literal is inside an ArrayHashElement (associative array)
         // or directly in the array (list array like ['a', 'b'])
         val arrayHash = PsiTreeUtil.getParentOfType(literal, ArrayHashElement::class.java)
 
         // Find the method reference that contains this array
-        val methodRef = findMethodReference(arrayCreation)
-            ?: return ColumnArrayPosition.NONE
+        val methodRef =
+            findMethodReference(arrayCreation)
+                ?: return ColumnArrayPosition.NONE
 
         // Check if this is an upsert/update/insert method
-        val methodName = methodRef.name
-            ?: return ColumnArrayPosition.NONE
+        val methodName =
+            methodRef.name
+                ?: return ColumnArrayPosition.NONE
         if (!BuilderMethods.ColumnArrayMethods.contains(methodName)) {
             return ColumnArrayPosition.NONE
         }
 
         // Find which argument this array is
-        val paramList = methodRef.parameterList
-            ?: return ColumnArrayPosition.NONE
+        val paramList =
+            methodRef.parameterList
+                ?: return ColumnArrayPosition.NONE
         val args = paramList.parameters
 
         val argIndex = args.indexOf(arrayCreation)

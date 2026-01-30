@@ -2,15 +2,12 @@ package com.github.xenforo.query.reference
 
 import com.github.xenforo.query.XenForoQueryTestCase
 import com.github.xenforo.query.utils.QueryChainResolver
-import com.intellij.psi.util.PsiTreeUtil
-import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 /**
  * Tests for ColumnReferenceProvider to ensure Go To Definition works correctly
  * for column names in various positions of upsert/update/insert methods.
  */
 class ColumnReferenceProviderTest : XenForoQueryTestCase() {
-
     /**
      * Test that column references are created for array keys in the first argument.
      */
@@ -34,7 +31,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         assertEquals(
             "Position should be KEY for first arg array key",
             QueryChainResolver.ColumnArrayPosition.KEY,
-            position
+            position,
         )
     }
 
@@ -63,7 +60,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         assertEquals(
             "Position should be VALUE for upsert second arg",
             QueryChainResolver.ColumnArrayPosition.VALUE,
-            position
+            position,
         )
     }
 
@@ -92,7 +89,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         assertEquals(
             "Position should be VALUE for upsert third arg",
             QueryChainResolver.ColumnArrayPosition.VALUE,
-            position
+            position,
         )
     }
 
@@ -122,7 +119,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         assertEquals(
             "Position should be NONE for nested json_encode keys",
             QueryChainResolver.ColumnArrayPosition.NONE,
-            position
+            position,
         )
     }
 
@@ -152,7 +149,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         assertEquals(
             "Position should be NONE for plain nested array keys",
             QueryChainResolver.ColumnArrayPosition.NONE,
-            position
+            position,
         )
     }
 
@@ -177,7 +174,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         assertEquals(
             "Position should be KEY for insert array key",
             QueryChainResolver.ColumnArrayPosition.KEY,
-            position
+            position,
         )
     }
 
