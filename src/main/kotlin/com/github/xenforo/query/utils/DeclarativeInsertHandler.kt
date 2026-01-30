@@ -9,15 +9,13 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiDocumentManager
 
-class DeclarativeInsertHandler private constructor(
+class DeclarativeInsertHandler
+private constructor(
     private val ignoredCompletionChars: String,
     private val valueToInsert: String,
     private val autoPopup: Boolean,
 ) : InsertHandler<LookupElement> {
-    override fun handleInsert(
-        context: InsertionContext,
-        item: LookupElement,
-    ) {
+    override fun handleInsert(context: InsertionContext, item: LookupElement) {
         val editor = context.editor
         val completionChar = context.completionChar
         if (StringUtil.containsChar(ignoredCompletionChars, completionChar)) return

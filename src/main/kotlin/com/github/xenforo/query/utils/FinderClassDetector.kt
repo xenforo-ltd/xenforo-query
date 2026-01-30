@@ -12,8 +12,8 @@ import com.jetbrains.php.lang.psi.resolve.types.PhpType
 /**
  * Detects if a method call is being made on a XenForo Entity Finder.
  *
- * Uses string pattern matching on type names rather than PhpIndex lookups
- * to avoid PSI invalidation issues during background processing.
+ * Uses string pattern matching on type names rather than PhpIndex lookups to avoid PSI invalidation issues during
+ * background processing.
  */
 object FinderClassDetector {
     fun isXenForoFinder(methodRef: MethodReference): Boolean {
@@ -21,11 +21,7 @@ object FinderClassDetector {
         return isXenForoFinderRecursive(methodRef, mutableSetOf(), 0)
     }
 
-    private fun isXenForoFinderRecursive(
-        element: PsiElement?,
-        visited: MutableSet<PsiElement>,
-        depth: Int,
-    ): Boolean {
+    private fun isXenForoFinderRecursive(element: PsiElement?, visited: MutableSet<PsiElement>, depth: Int): Boolean {
         if (element == null || !element.isValid || element in visited || depth > 20) {
             return false
         }
@@ -91,10 +87,8 @@ object FinderClassDetector {
 
             normalizedType.equals(FinderMethods.FINDER_FQN, ignoreCase = true) ||
                 normalizedType.contains("\\Finder\\", ignoreCase = true) ||
-                (
-                    normalizedType.startsWith("\\XF\\", ignoreCase = true) &&
-                        normalizedType.endsWith("Finder", ignoreCase = true)
-                )
+                (normalizedType.startsWith("\\XF\\", ignoreCase = true) &&
+                    normalizedType.endsWith("Finder", ignoreCase = true))
         }
     }
 

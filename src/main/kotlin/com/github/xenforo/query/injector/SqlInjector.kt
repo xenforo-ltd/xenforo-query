@@ -16,10 +16,7 @@ import com.jetbrains.php.lang.psi.elements.NewExpression
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 class SqlInjector : LanguageInjector {
-    override fun getLanguagesToInject(
-        host: PsiLanguageInjectionHost,
-        registrar: InjectedLanguagePlaces,
-    ) {
+    override fun getLanguagesToInject(host: PsiLanguageInjectionHost, registrar: InjectedLanguagePlaces) {
         if (host !is StringLiteralExpression) {
             return
         }
@@ -62,8 +59,7 @@ class SqlInjector : LanguageInjector {
                                 if (rawExpressionParameterList != null) {
                                     val rawExpressionParameters = rawExpressionParameterList.parameters
                                     val isFirstArg =
-                                        rawExpressionParameters.isNotEmpty() &&
-                                            rawExpressionParameters[0] == psiElement
+                                        rawExpressionParameters.isNotEmpty() && rawExpressionParameters[0] == psiElement
                                     if (isFirstArg) {
                                         injectSql(registrar, host, parentMethodCall)
                                         return

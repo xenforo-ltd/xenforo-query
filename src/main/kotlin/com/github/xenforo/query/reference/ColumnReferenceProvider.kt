@@ -15,10 +15,7 @@ import com.intellij.util.ProcessingContext
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 class ColumnReferenceProvider : PsiReferenceProvider() {
-    override fun getReferencesByElement(
-        element: PsiElement,
-        context: ProcessingContext,
-    ): Array<PsiReference> {
+    override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
         val lit =
             element as? StringLiteralExpression
                 ?: (element.parent as? StringLiteralExpression ?: return PsiReference.EMPTY_ARRAY)
@@ -106,8 +103,7 @@ class ColumnReferenceProvider : PsiReferenceProvider() {
         val table = LookupBuilder.findTable(project, tableInfo.tableName) ?: return PsiReference.EMPTY_ARRAY
         val columns = LookupBuilder.getColumnsForTable(project, table.name)
         val column =
-            columns.firstOrNull { it.name.equals(columnName, ignoreCase = true) }
-                ?: return PsiReference.EMPTY_ARRAY
+            columns.firstOrNull { it.name.equals(columnName, ignoreCase = true) } ?: return PsiReference.EMPTY_ARRAY
 
         return arrayOf(ColumnPsiReference(lit, column, project))
     }

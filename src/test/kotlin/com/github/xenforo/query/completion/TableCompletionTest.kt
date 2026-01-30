@@ -5,45 +5,41 @@ import com.github.xenforo.query.XenForoQueryTestCase
 /**
  * Tests for table name completion in XenForo Query Builder methods.
  *
- * Note: These tests verify the completion provider logic. Full integration tests
- * require both the PHP plugin and a database connection to be available.
+ * Note: These tests verify the completion provider logic. Full integration tests require both the PHP plugin and a
+ * database connection to be available.
  */
 class TableCompletionTest : XenForoQueryTestCase() {
-    /**
-     * Test that completion triggers inside XF::query() first argument.
-     */
+    /** Test that completion triggers inside XF::query() first argument. */
     fun testQueryMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('<caret>');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion triggers inside ->table() method.
-     */
+    /** Test that completion triggers inside ->table() method. */
     fun testTableMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query()->table('<caret>');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion triggers inside ->join() first argument.
-     */
+    /** Test that completion triggers inside ->join() first argument. */
     fun testJoinMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -51,16 +47,15 @@ class TableCompletionTest : XenForoQueryTestCase() {
             """
             \XF::query('xf_thread')
             	->join('<caret>', 'xf_thread.user_id', '=', 'xf_user.user_id');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion triggers inside ->leftJoin() first argument.
-     */
+    /** Test that completion triggers inside ->leftJoin() first argument. */
     fun testLeftJoinMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -68,16 +63,15 @@ class TableCompletionTest : XenForoQueryTestCase() {
             """
             \XF::query('xf_thread')
             	->leftJoin('<caret>', 'xf_thread.node_id', '=', 'xf_node.node_id');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion triggers inside ->rightJoin() first argument.
-     */
+    /** Test that completion triggers inside ->rightJoin() first argument. */
     fun testRightJoinMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -85,32 +79,30 @@ class TableCompletionTest : XenForoQueryTestCase() {
             """
             \XF::query('xf_thread')
             	->rightJoin('<caret>', 'xf_thread.node_id', '=', 'xf_node.node_id');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that table completion works with table alias syntax.
-     */
+    /** Test that table completion works with table alias syntax. */
     fun testQueryWithAliasSyntax() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('<caret> AS t');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test completion in a longer chain.
-     */
+    /** Test completion in a longer chain. */
     fun testCompletionInLongChain() {
         if (!isPhpPluginLoaded()) return
 
@@ -121,23 +113,23 @@ class TableCompletionTest : XenForoQueryTestCase() {
             	->join('<caret>', 'xf_thread.user_id', '=', 'xf_user.user_id')
             	->orderBy('post_date')
             	->limit(10);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that from() method also triggers table completion.
-     */
+    /** Test that from() method also triggers table completion. */
     fun testFromMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query()->from('<caret>');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()

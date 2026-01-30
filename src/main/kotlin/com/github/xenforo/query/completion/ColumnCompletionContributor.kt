@@ -10,8 +10,7 @@ import com.intellij.util.ProcessingContext
 import com.jetbrains.php.lang.lexer.PhpTokenTypes
 
 class ColumnCompletionContributor : CompletionContributor() {
-    init
-    {
+    init {
         extend(
             CompletionType.BASIC,
             PlatformPatterns.or(
@@ -25,13 +24,10 @@ class ColumnCompletionContributor : CompletionContributor() {
             PlatformPatterns.psiElement(PhpTokenTypes.STRING_LITERAL)
                 .with(
                     object : PatternCondition<PsiElement>("isArrayKeyInUpdate") {
-                        override fun accepts(
-                            t: PsiElement,
-                            context: ProcessingContext?,
-                        ): Boolean {
+                        override fun accepts(t: PsiElement, context: ProcessingContext?): Boolean {
                             return QueryChainResolver.isStringLiteralArrayKeyInColumnArray(t)
                         }
-                    },
+                    }
                 ),
             ColumnCompletionProvider(),
         )
@@ -40,13 +36,10 @@ class ColumnCompletionContributor : CompletionContributor() {
             PlatformPatterns.psiElement(PhpTokenTypes.STRING_LITERAL)
                 .with(
                     object : PatternCondition<PsiElement>("isArrayValueInUpsert") {
-                        override fun accepts(
-                            t: PsiElement,
-                            context: ProcessingContext?,
-                        ): Boolean {
+                        override fun accepts(t: PsiElement, context: ProcessingContext?): Boolean {
                             return QueryChainResolver.isStringLiteralArrayValueInColumnArray(t)
                         }
-                    },
+                    }
                 ),
             ColumnCompletionProvider(),
         )

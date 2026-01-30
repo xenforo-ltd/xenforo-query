@@ -10,16 +10,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 import com.jetbrains.php.lang.PhpLanguage
 
-/**
- * Triggers completion popup when typing a quote character inside XenForo Query Builder method calls.
- */
+/** Triggers completion popup when typing a quote character inside XenForo Query Builder method calls. */
 class XenForoQueryAutoPopupHandler : TypedHandlerDelegate() {
-    override fun checkAutoPopup(
-        charTyped: Char,
-        project: Project,
-        editor: Editor,
-        file: PsiFile,
-    ): Result {
+    override fun checkAutoPopup(charTyped: Char, project: Project, editor: Editor, file: PsiFile): Result {
         if (file.language != PhpLanguage.INSTANCE) return Result.CONTINUE
         if (charTyped != '\'' && charTyped != '"') return Result.CONTINUE
 
@@ -30,10 +23,7 @@ class XenForoQueryAutoPopupHandler : TypedHandlerDelegate() {
         val method = QueryChainResolver.findMethodReference(element) ?: return Result.CONTINUE
         val methodName = method.name ?: return Result.CONTINUE
 
-        val allMethods =
-            BuilderMethods.TableMethods +
-                BuilderMethods.ColumnMethods +
-                BuilderMethods.ColumnArrayMethods
+        val allMethods = BuilderMethods.TableMethods + BuilderMethods.ColumnMethods + BuilderMethods.ColumnArrayMethods
         if (!allMethods.contains(methodName)) return Result.CONTINUE
         if (!XenForoClassDetector.isXenForoQueryBuilder(method)) return Result.CONTINUE
 

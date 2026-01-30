@@ -8,10 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
 
-@State(
-    name = "XenForoQuerySettings",
-    storages = [Storage("xenforoQuery.xml")],
-)
+@State(name = "XenForoQuerySettings", storages = [Storage("xenforoQuery.xml")])
 @Service(Service.Level.PROJECT)
 class XenForoQuerySettings : PersistentStateComponent<XenForoQuerySettings.State> {
     data class State(
@@ -47,19 +44,39 @@ class XenForoQuerySettings : PersistentStateComponent<XenForoQuerySettings.State
     }
 
     // Convenience accessors
-    val isTableCompletionEnabled: Boolean get() = myState.enableTableCompletion
-    val isColumnCompletionEnabled: Boolean get() = myState.enableColumnCompletion
-    val isTableReferencesEnabled: Boolean get() = myState.enableTableReferences
-    val isColumnReferencesEnabled: Boolean get() = myState.enableColumnReferences
-    val isSqlInjectionEnabled: Boolean get() = myState.enableSqlInjection
-    val isInspectionsEnabled: Boolean get() = myState.enableInspections
+    val isTableCompletionEnabled: Boolean
+        get() = myState.enableTableCompletion
 
-    val shouldFilterDataSources: Boolean get() = myState.filterDataSources
-    val allowedDataSources: List<String> get() = myState.allowedDataSourceNames
+    val isColumnCompletionEnabled: Boolean
+        get() = myState.enableColumnCompletion
 
-    val shouldExcludeSystemSchemas: Boolean get() = myState.excludeSystemSchemas
-    val excludedSchemas: List<String> get() = myState.customExcludedSchemas
+    val isTableReferencesEnabled: Boolean
+        get() = myState.enableTableReferences
 
-    val tablePrefix: String get() = myState.tablePrefix
-    val requiresTablePrefix: Boolean get() = myState.requireTablePrefix
+    val isColumnReferencesEnabled: Boolean
+        get() = myState.enableColumnReferences
+
+    val isSqlInjectionEnabled: Boolean
+        get() = myState.enableSqlInjection
+
+    val isInspectionsEnabled: Boolean
+        get() = myState.enableInspections
+
+    val shouldFilterDataSources: Boolean
+        get() = myState.filterDataSources
+
+    val allowedDataSources: List<String>
+        get() = myState.allowedDataSourceNames
+
+    val shouldExcludeSystemSchemas: Boolean
+        get() = myState.excludeSystemSchemas
+
+    val excludedSchemas: List<String>
+        get() = myState.customExcludedSchemas
+
+    val tablePrefix: String
+        get() = myState.tablePrefix
+
+    val requiresTablePrefix: Boolean
+        get() = myState.requireTablePrefix
 }

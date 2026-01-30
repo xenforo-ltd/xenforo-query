@@ -13,10 +13,7 @@ import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 import com.jetbrains.php.lang.psi.visitors.PhpElementVisitor
 
 class UnknownTableInspection : LocalInspectionTool() {
-    override fun buildVisitor(
-        holder: ProblemsHolder,
-        isOnTheFly: Boolean,
-    ): PsiElementVisitor {
+    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
         return object : PhpElementVisitor() {
             override fun visitPhpStringLiteralExpression(expression: StringLiteralExpression) {
                 val project = expression.project
@@ -37,11 +34,7 @@ class UnknownTableInspection : LocalInspectionTool() {
 
                 val tableExists = LookupBuilder.findTable(project, tableName) != null
                 if (!tableExists) {
-                    holder.registerProblem(
-                        expression,
-                        "Unknown table: $tableName",
-                        ProblemHighlightType.WARNING,
-                    )
+                    holder.registerProblem(expression, "Unknown table: $tableName", ProblemHighlightType.WARNING)
                 }
             }
         }

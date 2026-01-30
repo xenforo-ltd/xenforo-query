@@ -19,10 +19,7 @@ object XenForoClassDetector {
     fun isXenForoQueryBuilder(methodRef: MethodReference): Boolean =
         isXenForoQueryBuilderRecursive(methodRef, mutableSetOf())
 
-    private fun isXenForoQueryBuilderRecursive(
-        element: PsiElement?,
-        visited: MutableSet<PsiElement>,
-    ): Boolean {
+    private fun isXenForoQueryBuilderRecursive(element: PsiElement?, visited: MutableSet<PsiElement>): Boolean {
         if (element == null || element in visited) {
             return false
         }
@@ -49,8 +46,10 @@ object XenForoClassDetector {
                     }
                 }
 
-                if ((methodName == "query" || methodName == "table") &&
-                    classRef != null && looksLikeXfReference(classRef)
+                if (
+                    (methodName == "query" || methodName == "table") &&
+                        classRef != null &&
+                        looksLikeXfReference(classRef)
                 ) {
                     return true
                 }
@@ -80,8 +79,8 @@ object XenForoClassDetector {
     }
 
     /**
-     * Resolves the latest assignment to this variable that appears before its usage.
-     * Example: $query = \XF::query('xf_user') -> returns the MethodReference
+     * Resolves the latest assignment to this variable that appears before its usage. Example: $query =
+     * \XF::query('xf_user') -> returns the MethodReference
      */
     private fun resolveVariableAssignment(variable: Variable): PsiElement? {
         val variableName = variable.name
@@ -107,15 +106,13 @@ object XenForoClassDetector {
     }
 
     /**
-     * Resolves closure parameters to their enclosing method call.
-     * Allows tracing `$query` inside `->where(function (Builder $query) { ... })` back to the table.
+     * Resolves closure parameters to their enclosing method call. Allows tracing `$query` inside `->where(function
+     * (Builder $query) { ... })` back to the table.
      */
     private fun resolveClosureParameterToMethod(variable: Variable): MethodReference? {
         val variableName = variable.name
 
-        val enclosingFunction =
-            PsiTreeUtil.getParentOfType(variable, Function::class.java)
-                ?: return null
+        val enclosingFunction = PsiTreeUtil.getParentOfType(variable, Function::class.java) ?: return null
 
         val isParameter = enclosingFunction.parameters.any { it.name == variableName }
         if (!isParameter) return null
@@ -140,15 +137,11 @@ object XenForoClassDetector {
     private fun isXfClass(type: PhpType): Boolean {
         val resolved = type.filterUnknown().filterMixed().filterNull()
         return resolved.types.any { typeName ->
-            typeName.equals(XF_CLASS_FQN, ignoreCase = true) ||
-                typeName.equals("XF", ignoreCase = true)
+            typeName.equals(XF_CLASS_FQN, ignoreCase = true) || typeName.equals("XF", ignoreCase = true)
         }
     }
 
-    private fun isBuilderType(
-        type: PhpType,
-        project: Project,
-    ): Boolean {
+    private fun isBuilderType(type: PhpType, project: Project): Boolean {
         val resolved = type.filterUnknown().filterMixed().filterNull()
 
         // Direct type match

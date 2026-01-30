@@ -32,18 +32,12 @@ class TableCompletionProvider : CompletionProvider<CompletionParameters>() {
         if (!isTableAcceptingMethod(methodName)) return
         if (!XenForoClassDetector.isXenForoQueryBuilder(method)) return
 
-        ApplicationManager.getApplication().runReadAction {
-            populateCompletions(project, settings, result)
-        }
+        ApplicationManager.getApplication().runReadAction { populateCompletions(project, settings, result) }
     }
 
     private fun isTableAcceptingMethod(methodName: String) = BuilderMethods.TableMethods.contains(methodName)
 
-    private fun populateCompletions(
-        project: Project,
-        settings: XenForoQuerySettings,
-        result: CompletionResultSet,
-    ) {
+    private fun populateCompletions(project: Project, settings: XenForoQuerySettings, result: CompletionResultSet) {
         ProgressManager.checkCanceled()
 
         val excludedSchemas =
@@ -60,10 +54,8 @@ class TableCompletionProvider : CompletionProvider<CompletionParameters>() {
                     !table.isSystem &&
                         !excludedSchemas.contains(schemaName) &&
                         // Apply table prefix filter if enabled
-                        (
-                            !settings.requiresTablePrefix ||
-                                table.name.startsWith(settings.tablePrefix, ignoreCase = true)
-                        )
+                        (!settings.requiresTablePrefix ||
+                            table.name.startsWith(settings.tablePrefix, ignoreCase = true))
                 }
                 .let { tableList ->
                     // Apply data source filter if enabled

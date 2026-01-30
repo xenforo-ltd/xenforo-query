@@ -4,13 +4,11 @@ import com.github.xenforo.query.XenForoQueryTestCase
 import com.github.xenforo.query.utils.QueryChainResolver
 
 /**
- * Tests for ColumnReferenceProvider to ensure Go To Definition works correctly
- * for column names in various positions of upsert/update/insert methods.
+ * Tests for ColumnReferenceProvider to ensure Go To Definition works correctly for column names in various positions of
+ * upsert/update/insert methods.
  */
 class ColumnReferenceProviderTest : XenForoQueryTestCase() {
-    /**
-     * Test that column references are created for array keys in the first argument.
-     */
+    /** Test that column references are created for array keys in the first argument. */
     fun testReferenceForFirstArgKey() {
         if (!isPhpPluginLoaded()) return
 
@@ -19,7 +17,8 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
             \XF::query('xf_user')->update([
                 '<caret>username' => 'new_value'
             ]);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // The reference provider should create a reference for 'username'
@@ -35,9 +34,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that column references are created for array values in upsert's second argument.
-     */
+    /** Test that column references are created for array values in upsert's second argument. */
     fun testReferenceForUpsertSecondArgValue() {
         if (!isPhpPluginLoaded()) return
 
@@ -49,7 +46,8 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
                     ['<caret>username'],
                     ['last_seen']
                 );
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
@@ -64,9 +62,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that column references are created for array values in upsert's third argument.
-     */
+    /** Test that column references are created for array values in upsert's third argument. */
     fun testReferenceForUpsertThirdArgValue() {
         if (!isPhpPluginLoaded()) return
 
@@ -78,7 +74,8 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
                     ['username'],
                     ['<caret>last_seen']
                 );
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
@@ -93,9 +90,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that NO reference is created for nested array keys inside json_encode.
-     */
+    /** Test that NO reference is created for nested array keys inside json_encode. */
     fun testNoReferenceForNestedJsonEncodeKeys() {
         if (!isPhpPluginLoaded()) return
 
@@ -108,7 +103,8 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
                     ],
                     ['username']
                 );
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
@@ -123,9 +119,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that NO reference is created for plain nested array keys.
-     */
+    /** Test that NO reference is created for plain nested array keys. */
     fun testNoReferenceForPlainNestedArrayKeys() {
         if (!isPhpPluginLoaded()) return
 
@@ -138,7 +132,8 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
                     ],
                     ['username']
                 );
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
@@ -153,9 +148,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that references work for insert method array keys.
-     */
+    /** Test that references work for insert method array keys. */
     fun testReferenceForInsertArrayKeys() {
         if (!isPhpPluginLoaded()) return
 
@@ -164,7 +157,8 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
             \XF::query('xf_user')->insert([
                 '<caret>username' => 'test'
             ]);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
@@ -178,9 +172,7 @@ class ColumnReferenceProviderTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test the ColumnReferenceProvider can be instantiated.
-     */
+    /** Test the ColumnReferenceProvider can be instantiated. */
     fun testProviderCanBeInstantiated() {
         val provider = ColumnReferenceProvider()
         assertNotNull("Provider should be created", provider)

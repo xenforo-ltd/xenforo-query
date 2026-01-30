@@ -26,11 +26,7 @@ import com.jetbrains.php.lang.psi.resolve.types.PhpType
  * 4. Parse `$structure->table = 'table_name'` to get table name
  */
 object FinderEntityResolver {
-    data class FinderTableInfo(
-        val tableName: String,
-        val entityClass: String?,
-        val finderClass: String?,
-    )
+    data class FinderTableInfo(val tableName: String, val entityClass: String?, val finderClass: String?)
 
     fun resolveTable(methodRef: MethodReference): FinderTableInfo? {
         if (!methodRef.isValid) return null
@@ -41,17 +37,10 @@ object FinderEntityResolver {
         val entityFqn = resolveEntityFqnFromFinder(finderFqn, project) ?: return null
         val tableName = resolveTableFromEntity(entityFqn, project) ?: return null
 
-        return FinderTableInfo(
-            tableName = tableName,
-            entityClass = entityFqn,
-            finderClass = finderFqn,
-        )
+        return FinderTableInfo(tableName = tableName, entityClass = entityFqn, finderClass = finderFqn)
     }
 
-    private fun resolveFinderClassFqn(
-        methodRef: MethodReference,
-        project: Project,
-    ): String? {
+    private fun resolveFinderClassFqn(methodRef: MethodReference, project: Project): String? {
         return resolveFinderClassFqnRecursive(methodRef, project, mutableSetOf())
     }
 
@@ -73,22 +62,32 @@ object FinderEntityResolver {
                     if (finderArg is ClassConstantReference) {
                         val classRef = finderArg.classReference
                         if (classRef is ClassReference) {
-                            classRef.fqn?.let { return it }
+                            classRef.fqn?.let {
+                                return it
+                            }
                         }
                     } else if (finderArg is StringLiteralExpression) {
-                        resolveXenForoShortName(finderArg.contents, "Finder", project)?.let { return it }
+                        resolveXenForoShortName(finderArg.contents, "Finder", project)?.let {
+                            return it
+                        }
                     }
                 }
 
                 val classRef = element.classReference
                 if (classRef != null && classRef.isValid) {
-                    resolveFinderClassFqnRecursive(classRef, project, visited)?.let { return it }
+                    resolveFinderClassFqnRecursive(classRef, project, visited)?.let {
+                        return it
+                    }
                 }
 
-                getFinderFqnFromType(element.type)?.let { return it }
+                getFinderFqnFromType(element.type)?.let {
+                    return it
+                }
 
                 if (classRef is PhpTypedElement && classRef.isValid) {
-                    getFinderFqnFromType(classRef.type)?.let { return it }
+                    getFinderFqnFromType(classRef.type)?.let {
+                        return it
+                    }
                 }
             }
 
@@ -97,10 +96,14 @@ object FinderEntityResolver {
 
                 val resolved = resolveVariableAssignment(element)
                 if (resolved != null) {
-                    resolveFinderClassFqnRecursive(resolved, project, visited)?.let { return it }
+                    resolveFinderClassFqnRecursive(resolved, project, visited)?.let {
+                        return it
+                    }
                 }
 
-                getFinderFqnFromType(element.type)?.let { return it }
+                getFinderFqnFromType(element.type)?.let {
+                    return it
+                }
             }
 
             is PhpTypedElement -> {
@@ -112,11 +115,7 @@ object FinderEntityResolver {
         return null
     }
 
-    private fun resolveXenForoShortName(
-        shortName: String,
-        suffix: String,
-        project: Project,
-    ): String? {
+    private fun resolveXenForoShortName(shortName: String, suffix: String, project: Project): String? {
         if (!shortName.contains(":")) return null
 
         val parts = shortName.split(":", limit = 2)
@@ -151,34 +150,26 @@ object FinderEntityResolver {
 
         return normalizedType.equals(FinderMethods.FINDER_FQN, ignoreCase = true) ||
             normalizedType.contains("\\Finder\\", ignoreCase = true) ||
-            (
-                normalizedType.startsWith("\\XF\\", ignoreCase = true) &&
-                    normalizedType.endsWith("Finder", ignoreCase = true)
-            )
+            (normalizedType.startsWith("\\XF\\", ignoreCase = true) &&
+                normalizedType.endsWith("Finder", ignoreCase = true))
     }
 
-    private fun resolveEntityFqnFromFinder(
-        finderFqn: String,
-        project: Project,
-    ): String? {
+    private fun resolveEntityFqnFromFinder(finderFqn: String, project: Project): String? {
         val phpIndex = PhpIndex.getInstance(project)
         val finderClasses = phpIndex.getClassesByFQN(finderFqn)
 
         for (finderClass in finderClasses) {
             if (!finderClass.isValid) continue
 
-            resolveEntityFromFinderClass(finderClass, project)?.let { return it }
+            resolveEntityFromFinderClass(finderClass, project)?.let {
+                return it
+            }
         }
         return null
     }
 
-    /**
-     * Parses `@extends Finder<EntityClass>` from the Finder's PHPDoc.
-     */
-    private fun resolveEntityFromFinderClass(
-        finderClass: PhpClass,
-        project: Project,
-    ): String? {
+    /** Parses `@extends Finder<EntityClass>` from the Finder's PHPDoc. */
+    private fun resolveEntityFromFinderClass(finderClass: PhpClass, project: Project): String? {
         if (!finderClass.isValid) return null
 
         val docComment = finderClass.docComment as? PhpDocComment
@@ -191,11 +182,7 @@ object FinderEntityResolver {
         return resolveEntityFqn(entityRef, finderClass, project)
     }
 
-    private fun resolveEntityFqn(
-        entityRef: String,
-        contextClass: PhpClass,
-        project: Project,
-    ): String? {
+    private fun resolveEntityFqn(entityRef: String, contextClass: PhpClass, project: Project): String? {
         if (entityRef.startsWith("\\")) return entityRef
 
         val phpIndex = PhpIndex.getInstance(project)
@@ -248,25 +235,22 @@ object FinderEntityResolver {
         return null
     }
 
-    private fun resolveTableFromEntity(
-        entityFqn: String,
-        project: Project,
-    ): String? {
+    private fun resolveTableFromEntity(entityFqn: String, project: Project): String? {
         val phpIndex = PhpIndex.getInstance(project)
         val entityClasses = phpIndex.getClassesByFQN(entityFqn)
 
         for (entityClass in entityClasses) {
             if (!entityClass.isValid) continue
 
-            extractTableFromGetStructure(entityClass)?.let { return it }
+            extractTableFromGetStructure(entityClass)?.let {
+                return it
+            }
         }
 
         return null
     }
 
-    /**
-     * Finds `$structure->table = 'table_name'` in the Entity's getStructure() method.
-     */
+    /** Finds `$structure->table = 'table_name'` in the Entity's getStructure() method. */
     private fun extractTableFromGetStructure(entityClass: PhpClass): String? {
         if (!entityClass.isValid) return null
 

@@ -13,10 +13,7 @@ import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 import com.jetbrains.php.lang.psi.visitors.PhpElementVisitor
 
 class UnknownColumnInspection : LocalInspectionTool() {
-    override fun buildVisitor(
-        holder: ProblemsHolder,
-        isOnTheFly: Boolean,
-    ): PsiElementVisitor {
+    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
         return object : PhpElementVisitor() {
             override fun visitPhpStringLiteralExpression(expression: StringLiteralExpression) {
                 val project = expression.project
@@ -85,11 +82,7 @@ class UnknownColumnInspection : LocalInspectionTool() {
                 if (foundTablesInDb == 0) return
 
                 if (!availableColumns.any { it.equals(columnName, ignoreCase = true) }) {
-                    holder.registerProblem(
-                        expression,
-                        "Unknown column: $columnRef",
-                        ProblemHighlightType.WARNING,
-                    )
+                    holder.registerProblem(expression, "Unknown column: $columnRef", ProblemHighlightType.WARNING)
                 }
             }
         }

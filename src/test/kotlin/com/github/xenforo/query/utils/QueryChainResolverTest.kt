@@ -9,11 +9,11 @@ import com.jetbrains.php.lang.psi.elements.Variable
 /**
  * Tests for QueryChainResolver utility class.
  *
- * These tests verify that the chain resolver correctly extracts table information
- * from XenForo query builder method chains.
+ * These tests verify that the chain resolver correctly extracts table information from XenForo query builder method
+ * chains.
  *
- * Note: These tests require the PHP plugin to be loaded. If the PHP plugin is not
- * available (e.g., in CI without full IDE), tests will be skipped.
+ * Note: These tests require the PHP plugin to be loaded. If the PHP plugin is not available (e.g., in CI without full
+ * IDE), tests will be skipped.
  */
 class QueryChainResolverTest : XenForoQueryTestCase() {
     override fun setUp() {
@@ -24,16 +24,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         }
     }
 
-    /**
-     * Test resolving a simple query with single table.
-     */
+    /** Test resolving a simple query with single table. */
     fun testResolvesSimpleQueryTable() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('xf_user')->where('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -46,16 +45,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertNull("Should have no alias", tables[0].alias)
     }
 
-    /**
-     * Test resolving a table with AS alias syntax.
-     */
+    /** Test resolving a table with AS alias syntax. */
     fun testResolvesTableWithAlias() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('xf_user AS u')->where('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -66,16 +64,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("u", tables[0].alias)
     }
 
-    /**
-     * Test resolving a table with space alias syntax (no AS keyword).
-     */
+    /** Test resolving a table with space alias syntax (no AS keyword). */
     fun testResolvesTableWithSpaceAlias() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('xf_user u')->where('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -86,9 +83,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("u", tables[0].alias)
     }
 
-    /**
-     * Test resolving with a single JOIN.
-     */
+    /** Test resolving with a single JOIN. */
     fun testResolvesJoinedTables() {
         if (!isPhpPluginLoaded()) return
 
@@ -97,7 +92,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             \XF::query('xf_thread')
             	->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id')
             	->where('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -109,9 +105,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("JOIN", tables[1].joinType)
     }
 
-    /**
-     * Test resolving LEFT JOIN.
-     */
+    /** Test resolving LEFT JOIN. */
     fun testResolvesLeftJoin() {
         if (!isPhpPluginLoaded()) return
 
@@ -120,7 +114,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             \XF::query('xf_thread')
             	->leftJoin('xf_node', 'xf_thread.node_id', '=', 'xf_node.node_id')
             	->where('node_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -130,9 +125,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("LEFT JOIN", tables[1].joinType)
     }
 
-    /**
-     * Test resolving RIGHT JOIN.
-     */
+    /** Test resolving RIGHT JOIN. */
     fun testResolvesRightJoin() {
         if (!isPhpPluginLoaded()) return
 
@@ -141,7 +134,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             \XF::query('xf_thread')
             	->rightJoin('xf_node', 'xf_thread.node_id', '=', 'xf_node.node_id')
             	->where('node_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -151,9 +145,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("RIGHT JOIN", tables[1].joinType)
     }
 
-    /**
-     * Test resolving multiple JOINs.
-     */
+    /** Test resolving multiple JOINs. */
     fun testResolvesMultipleJoins() {
         if (!isPhpPluginLoaded()) return
 
@@ -163,7 +155,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             	->join('xf_user AS u', 't.user_id', '=', 'u.user_id')
             	->leftJoin('xf_node AS n', 't.node_id', '=', 'n.node_id')
             	->where('t.thread_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -183,16 +176,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("LEFT JOIN", tables[2].joinType)
     }
 
-    /**
-     * Test that ->table() method is recognized.
-     */
+    /** Test that ->table() method is recognized. */
     fun testResolvesTableMethod() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query()->table('xf_post')->where('post_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -202,9 +194,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("xf_post", tables[0].baseTable)
     }
 
-    /**
-     * Test chain traversal works through many chained methods.
-     */
+    /** Test chain traversal works through many chained methods. */
     fun testChainTraversalNotBroken() {
         if (!isPhpPluginLoaded()) return
 
@@ -216,7 +206,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             	->orderBy('post_date')
             	->limit(10)
             	->select('title');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val selectMethod = findMethodByName("select")
@@ -226,16 +217,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("xf_thread", tables[0].baseTable)
     }
 
-    /**
-     * Test finding method reference works.
-     */
+    /** Test finding method reference works. */
     fun testFindMethodReference() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('xf_user')->where('user_id<caret>', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
@@ -246,9 +236,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("where", method?.name)
     }
 
-    /**
-     * Test that isStringLiteralArrayKeyInColumnArray correctly identifies array keys.
-     */
+    /** Test that isStringLiteralArrayKeyInColumnArray correctly identifies array keys. */
     fun testIsArrayKeyDetection() {
         if (!isPhpPluginLoaded()) return
 
@@ -257,7 +245,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             \XF::query('xf_user')->update([
             	'username' => 'new_value'
             ]);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the 'username' string literal (the key)
@@ -269,9 +258,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertTrue("Should detect string as array key", result)
     }
 
-    /**
-     * Test that isStringLiteralArrayKeyInColumnArray returns false for array values.
-     */
+    /** Test that isStringLiteralArrayKeyInColumnArray returns false for array values. */
     fun testIsArrayValueDetection() {
         if (!isPhpPluginLoaded()) return
 
@@ -280,7 +267,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             \XF::query('xf_user')->update([
             	'username' => 'new_value'
             ]);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the 'new_value' string literal (the value)
@@ -292,16 +280,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertFalse("Should not detect string as array key when it's a value", result)
     }
 
-    /**
-     * Test resolving with lowercase 'as' keyword.
-     */
+    /** Test resolving with lowercase 'as' keyword. */
     fun testResolvesTableWithLowercaseAs() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('xf_user as u')->where('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -312,16 +299,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("u", tables[0].alias)
     }
 
-    /**
-     * Test with empty query (no table).
-     */
+    /** Test with empty query (no table). */
     fun testEmptyQuery() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query()->where('col', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -331,8 +317,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
-     * Test resolving tables through variable assignment.
-     * This is a common pattern: $query = \XF::query('table'); $query->method();
+     * Test resolving tables through variable assignment. This is a common pattern: $query = \XF::query('table');
+     * $query->method();
      */
     fun testResolvesTablesThroughVariableAssignment() {
         if (!isPhpPluginLoaded()) return
@@ -341,7 +327,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             """
             ${'$'}query = \XF::query('xf_post');
             ${'$'}query->where('post_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -353,9 +340,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("xf_post", tables[0].baseTable)
     }
 
-    /**
-     * Test resolving tables through variable with chained methods on assignment.
-     */
+    /** Test resolving tables through variable with chained methods on assignment. */
     fun testResolvesTablesThroughVariableWithChain() {
         if (!isPhpPluginLoaded()) return
 
@@ -363,7 +348,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             """
             ${'$'}query = \XF::query('xf_thread')->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id');
             ${'$'}query->where('thread_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -376,9 +362,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("xf_user", tables[1].baseTable)
     }
 
-    /**
-     * Test resolving tables when variable is reassigned (uses latest assignment before usage).
-     */
+    /** Test resolving tables when variable is reassigned (uses latest assignment before usage). */
     fun testResolvesTablesFromLatestVariableAssignment() {
         if (!isPhpPluginLoaded()) return
 
@@ -387,7 +371,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             ${'$'}query = \XF::query('xf_user');
             ${'$'}query = \XF::query('xf_post');
             ${'$'}query->where('post_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val whereMethod = findMethodByName("where")
@@ -399,9 +384,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("Should use latest assignment (xf_post)", "xf_post", tables[0].baseTable)
     }
 
-    /**
-     * Test resolving tables with variable and table() method.
-     */
+    /** Test resolving tables with variable and table() method. */
     fun testResolvesTablesThroughVariableWithTableMethod() {
         if (!isPhpPluginLoaded()) return
 
@@ -409,7 +392,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             """
             ${'$'}builder = \XF::query()->table('xf_node');
             ${'$'}builder->select('node_id');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val selectMethod = findMethodByName("select")
@@ -421,10 +405,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("xf_node", tables[0].baseTable)
     }
 
-    /**
-     * Test resolving tables inside a closure parameter.
-     * This is a common pattern for complex where conditions.
-     */
+    /** Test resolving tables inside a closure parameter. This is a common pattern for complex where conditions. */
     fun testResolvesTablesInsideClosureParameter() {
         if (!isPhpPluginLoaded()) return
 
@@ -434,7 +415,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             	->where(function (${'$'}query) {
             		${'$'}query->where('position', '>', 0);
             	});
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the inner where method (inside the closure)
@@ -451,9 +433,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("xf_post", tables[0].baseTable)
     }
 
-    /**
-     * Test resolving tables inside nested closures.
-     */
+    /** Test resolving tables inside nested closures. */
     fun testResolvesTablesInsideNestedClosures() {
         if (!isPhpPluginLoaded()) return
 
@@ -466,7 +446,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             				${'$'}query->where('col2', 2);
             			});
             	});
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the innermost where method (col2)
@@ -483,9 +464,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("xf_post", tables[0].baseTable)
     }
 
-    /**
-     * Test resolving tables inside closure with joins.
-     */
+    /** Test resolving tables inside closure with joins. */
     fun testResolvesTablesInsideClosureWithJoins() {
         if (!isPhpPluginLoaded()) return
 
@@ -496,7 +475,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             	->where(function (${'$'}query) {
             		${'$'}query->where('user_state', 'valid');
             	});
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the inner where method
@@ -515,8 +495,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
-     * Test forward chain resolution: joins defined AFTER select are still resolved.
-     * This verifies the resolver looks forward in the chain, not just backward.
+     * Test forward chain resolution: joins defined AFTER select are still resolved. This verifies the resolver looks
+     * forward in the chain, not just backward.
      */
     fun testResolvesJoinAfterSelect() {
         if (!isPhpPluginLoaded()) return
@@ -527,7 +507,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                 ->select('thread_id', 'title')
                 ->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id')
                 ->where('thread_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the select method - join comes AFTER it
@@ -544,8 +525,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
-     * Test forward chain resolution: multiple joins at different positions work.
-     * Joins can be scattered throughout the chain and should all be found.
+     * Test forward chain resolution: multiple joins at different positions work. Joins can be scattered throughout the
+     * chain and should all be found.
      */
     fun testResolvesMultipleJoinsAfterSelect() {
         if (!isPhpPluginLoaded()) return
@@ -560,7 +541,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                 ->orderBy('t.post_date')
                 ->rightJoin('xf_attachment AS a', 't.thread_id', '=', 'a.content_id')
                 ->limit(10);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the select method - joins are both before and after it
@@ -589,8 +571,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
-     * Test forward chain resolution: join after where works.
-     * This is a common pattern where conditions are added before joins.
+     * Test forward chain resolution: join after where works. This is a common pattern where conditions are added before
+     * joins.
      */
     fun testResolvesJoinAfterWhere() {
         if (!isPhpPluginLoaded()) return
@@ -602,7 +584,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                 ->where('p.post_date', '>', 1234567890)
                 ->join('xf_thread AS t', 'p.thread_id', '=', 't.thread_id')
                 ->orderBy('p.post_date', 'DESC');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the first where method - join comes AFTER it
@@ -625,17 +608,15 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertEquals("JOIN", tables[1].joinType)
     }
 
-    /**
-     * Helper method to find a MethodReference by method name.
-     */
+    /** Helper method to find a MethodReference by method name. */
     private fun findMethodByName(name: String): MethodReference? {
         val methods = findAllMethodReferences()
         return methods.find { it.name == name }
     }
 
     /**
-     * Test that isStringLiteralArrayValueInColumnArray correctly identifies array values
-     * in the second and third arguments of upsert.
+     * Test that isStringLiteralArrayValueInColumnArray correctly identifies array values in the second and third
+     * arguments of upsert.
      */
     fun testIsArrayValueInUpsertSecondArg() {
         if (!isPhpPluginLoaded()) return
@@ -648,7 +629,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                     ['username', 'email'],
                     ['last_seen']
                 );
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the 'username' string literal in the second argument (uniqueBy array)
@@ -656,17 +638,13 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         val secondArgValues = stringLiterals.filter { it.contents == "username" || it.contents == "email" }
 
         // At least one should be detected as a value in the second argument
-        val foundValue =
-            secondArgValues.any { lit ->
-                QueryChainResolver.isStringLiteralArrayValueInColumnArray(lit)
-            }
+        val foundValue = secondArgValues.any { lit -> QueryChainResolver.isStringLiteralArrayValueInColumnArray(lit) }
 
         assertTrue("Should detect strings as array values in upsert second arg", foundValue)
     }
 
     /**
-     * Test that isStringLiteralArrayKeyInColumnArray returns false for nested array keys
-     * inside json_encode() calls.
+     * Test that isStringLiteralArrayKeyInColumnArray returns false for nested array keys inside json_encode() calls.
      */
     fun testNestedJsonEncodeKeysNotDetected() {
         if (!isPhpPluginLoaded()) return
@@ -681,7 +659,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                     ],
                     ['username']
                 );
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the 'nested_key' string literal
@@ -698,9 +677,7 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
         assertFalse("Should not detect nested json_encode key as array value", isValue)
     }
 
-    /**
-     * Test getColumnArrayPosition for various positions.
-     */
+    /** Test getColumnArrayPosition for various positions. */
     fun testGetColumnArrayPosition() {
         if (!isPhpPluginLoaded()) return
 
@@ -712,7 +689,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                     ['username'],
                     ['last_seen']
                 );
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val stringLiterals = PsiTreeUtil.findChildrenOfType(myFixture.file, StringLiteralExpression::class.java)
@@ -743,9 +721,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
-     * Test enhanced closure resolution: join inside closure is resolved.
-     * This verifies that when a join is added inside a closure, it's available
-     * for completions/inspections within that closure.
+     * Test enhanced closure resolution: join inside closure is resolved. This verifies that when a join is added inside
+     * a closure, it's available for completions/inspections within that closure.
      */
     fun testResolvesJoinInsideClosure() {
         if (!isPhpPluginLoaded()) return
@@ -757,7 +734,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                     ${'$'}query->join('xf_user AS u', 't.user_id', '=', 'u.user_id');
                     ${'$'}query->where('u.username', 'admin');
                 });
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the inner where method that uses the joined table
@@ -788,8 +766,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
-     * Test enhanced closure resolution: nested closures with joins at different levels.
-     * Verifies that joins from both outer and inner closures are all available.
+     * Test enhanced closure resolution: nested closures with joins at different levels. Verifies that joins from both
+     * outer and inner closures are all available.
      */
     fun testResolvesNestedClosuresWithJoins() {
         if (!isPhpPluginLoaded()) return
@@ -804,7 +782,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
                         ${'$'}query->where('u.username', 'admin');
                     });
                 });
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the innermost where that uses 'username'
@@ -834,8 +813,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
     }
 
     /**
-     * Test that resolveClosureWithTables returns null for non-closure variables.
-     * This ensures we don't incorrectly treat regular variables as closures.
+     * Test that resolveClosureWithTables returns null for non-closure variables. This ensures we don't incorrectly
+     * treat regular variables as closures.
      */
     fun testResolveClosureWithTablesReturnsNullForNonClosures() {
         if (!isPhpPluginLoaded()) return
@@ -844,7 +823,8 @@ class QueryChainResolverTest : XenForoQueryTestCase() {
             """
             ${'$'}name = 'test';
             \XF::query('xf_user')->where('username', ${'$'}name);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         // Find the Variable for ${'$'}name (which is NOT a closure parameter)

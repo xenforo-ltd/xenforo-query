@@ -12,10 +12,7 @@ import com.intellij.util.ProcessingContext
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression
 
 class TableReferenceProvider : PsiReferenceProvider() {
-    override fun getReferencesByElement(
-        element: PsiElement,
-        context: ProcessingContext,
-    ): Array<PsiReference> {
+    override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
         val lit =
             element as? StringLiteralExpression
                 ?: (element.parent as? StringLiteralExpression ?: return PsiReference.EMPTY_ARRAY)

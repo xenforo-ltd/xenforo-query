@@ -5,14 +5,11 @@ import com.github.xenforo.query.XenForoQueryTestCase
 /**
  * Tests for column name completion in XenForo Entity Finder methods.
  *
- * The Finder system uses Entity classes that define their table structure
- * via getStructure(). These tests verify that column completion works
- * for Finder methods like where(), order(), etc.
+ * The Finder system uses Entity classes that define their table structure via getStructure(). These tests verify that
+ * column completion works for Finder methods like where(), order(), etc.
  */
 class FinderColumnCompletionTest : XenForoQueryTestCase() {
-    /**
-     * Test that completion triggers inside Finder ->where() method.
-     */
+    /** Test that completion triggers inside Finder ->where() method. */
     fun testFinderWhereMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -25,16 +22,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                     ${'$'}this->finder(ThreadFinder::class)->where('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion triggers inside Finder ->whereOr() method.
-     */
+    /** Test that completion triggers inside Finder ->whereOr() method. */
     fun testFinderWhereOrMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -51,16 +47,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                         ]);
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion triggers inside Finder ->order() method.
-     */
+    /** Test that completion triggers inside Finder ->order() method. */
     fun testFinderOrderMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -73,16 +68,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                     ${'$'}this->finder(ThreadFinder::class)->order('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion triggers inside Finder ->setDefaultOrder() method.
-     */
+    /** Test that completion triggers inside Finder ->setDefaultOrder() method. */
     fun testFinderSetDefaultOrderMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -95,16 +89,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                     ${'$'}this->finder(ThreadFinder::class)->setDefaultOrder('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test completion with Finder assigned to a variable.
-     */
+    /** Test completion with Finder assigned to a variable. */
     fun testFinderCompletionWithVariable() {
         if (!isPhpPluginLoaded()) return
 
@@ -118,16 +111,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                     ${'$'}threadFinder->where('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test completion with chained Finder methods.
-     */
+    /** Test completion with chained Finder methods. */
     fun testFinderCompletionWithChainedMethods() {
         if (!isPhpPluginLoaded()) return
 
@@ -143,16 +135,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                         ->order('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test completion with UserFinder to ensure different entities work.
-     */
+    /** Test completion with UserFinder to ensure different entities work. */
     fun testUserFinderCompletionTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -165,16 +156,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                     ${'$'}this->finder(UserFinder::class)->where('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that completion does NOT trigger for non-column methods.
-     */
+    /** Test that completion does NOT trigger for non-column methods. */
     fun testFinderNonColumnMethodDoesNotTrigger() {
         if (!isPhpPluginLoaded()) return
 
@@ -187,7 +177,8 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                     ${'$'}this->finder(ThreadFinder::class)->with('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
@@ -196,9 +187,7 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that Finder detection works for direct entity manager calls.
-     */
+    /** Test that Finder detection works for direct entity manager calls. */
     fun testFinderViaEntityManager() {
         if (!isPhpPluginLoaded()) return
 
@@ -208,16 +197,15 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
             
             ${'$'}finder = \XF::em()->getFinder(ThreadFinder::class);
             ${'$'}finder->where('<caret>');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()
         assertNotNull("Should find element at caret", element)
     }
 
-    /**
-     * Test that whereId method triggers completion.
-     */
+    /** Test that whereId method triggers completion. */
     fun testFinderWhereIdMethodTriggers() {
         if (!isPhpPluginLoaded()) return
 
@@ -230,7 +218,8 @@ class FinderColumnCompletionTest : XenForoQueryTestCase() {
                     ${'$'}this->finder(ThreadFinder::class)->whereId('<caret>');
                 }
             }
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val element = getElementAtCaret()

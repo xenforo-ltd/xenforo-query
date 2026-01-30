@@ -5,33 +5,27 @@ import com.github.xenforo.query.XenForoQueryTestCase
 /**
  * Tests for XenForoClassDetector utility.
  *
- * These tests verify that the type detection correctly identifies
- * XenForo's Query Builder and rejects unrelated classes.
+ * These tests verify that the type detection correctly identifies XenForo's Query Builder and rejects unrelated
+ * classes.
  */
 class XenForoClassDetectorTest : XenForoQueryTestCase() {
-    /**
-     * Test that direct \XF::query() calls are detected.
-     */
+    /** Test that direct \XF::query() calls are detected. */
     fun testDetectsDirectXfQuery() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query('xf_user')->where<caret>('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
         assertNotNull("Should find method reference", method)
-        assertTrue(
-            "Should detect XenForo Query Builder",
-            XenForoClassDetector.isXenForoQueryBuilder(method!!),
-        )
+        assertTrue("Should detect XenForo Query Builder", XenForoClassDetector.isXenForoQueryBuilder(method!!))
     }
 
-    /**
-     * Test that chained method calls are detected.
-     */
+    /** Test that chained method calls are detected. */
     fun testDetectsChainedMethods() {
         if (!isPhpPluginLoaded()) return
 
@@ -40,27 +34,24 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             \XF::query('xf_user')
             	->where('user_state', 'valid')
             	->orderBy<caret>('username');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
         assertNotNull("Should find method reference", method)
-        assertTrue(
-            "Should detect XenForo Query Builder in chain",
-            XenForoClassDetector.isXenForoQueryBuilder(method!!),
-        )
+        assertTrue("Should detect XenForo Query Builder in chain", XenForoClassDetector.isXenForoQueryBuilder(method!!))
     }
 
-    /**
-     * Test that the query() method on \XF is detected.
-     */
+    /** Test that the query() method on \XF is detected. */
     fun testDetectsXfQueryMethod() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query<caret>('xf_user');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
@@ -71,9 +62,7 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that unrelated classes with similar method names are rejected.
-     */
+    /** Test that unrelated classes with similar method names are rejected. */
     fun testRejectsUnrelatedClass() {
         if (!isPhpPluginLoaded()) return
 
@@ -85,21 +74,17 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             
             ${'$'}builder = new MyQueryBuilder();
             ${'$'}builder->where<caret>('test', 1);
-            """.trimIndent()
+            """
+                .trimIndent()
 
         configureByPhpText(phpCode)
 
         val method = findMethodReferenceAtCaret()
         assertNotNull("Should find method reference", method)
-        assertFalse(
-            "Should reject non-XenForo class",
-            XenForoClassDetector.isXenForoQueryBuilder(method!!),
-        )
+        assertFalse("Should reject non-XenForo class", XenForoClassDetector.isXenForoQueryBuilder(method!!))
     }
 
-    /**
-     * Test that generic where() methods on collections are rejected.
-     */
+    /** Test that generic where() methods on collections are rejected. */
     fun testRejectsGenericWhereMethod() {
         if (!isPhpPluginLoaded()) return
 
@@ -111,21 +96,17 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             
             ${'$'}items = new Collection();
             ${'$'}items->where<caret>('active', true);
-            """.trimIndent()
+            """
+                .trimIndent()
 
         configureByPhpText(phpCode)
 
         val method = findMethodReferenceAtCaret()
         assertNotNull("Should find method reference", method)
-        assertFalse(
-            "Should reject generic where() method",
-            XenForoClassDetector.isXenForoQueryBuilder(method!!),
-        )
+        assertFalse("Should reject generic where() method", XenForoClassDetector.isXenForoQueryBuilder(method!!))
     }
 
-    /**
-     * Test that plain function calls without a class are rejected.
-     */
+    /** Test that plain function calls without a class are rejected. */
     fun testRejectsPlainFunctionCall() {
         if (!isPhpPluginLoaded()) return
 
@@ -134,7 +115,8 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             function query(${'$'}table) { return new stdClass(); }
             
             query<caret>('xf_user');
-            """.trimIndent()
+            """
+                .trimIndent()
 
         configureByPhpText(phpCode)
 
@@ -144,24 +126,20 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         val method = element?.let { QueryChainResolver.findMethodReference(it) }
 
         if (method != null) {
-            assertFalse(
-                "Should reject plain function calls",
-                XenForoClassDetector.isXenForoQueryBuilder(method),
-            )
+            assertFalse("Should reject plain function calls", XenForoClassDetector.isXenForoQueryBuilder(method))
         }
         // If method is null, the test passes - function calls aren't MethodReferences
     }
 
-    /**
-     * Test detection with the table() method entry point.
-     */
+    /** Test detection with the table() method entry point. */
     fun testDetectsTableMethodEntryPoint() {
         if (!isPhpPluginLoaded()) return
 
         configureByPhpText(
             """
             \XF::query()->table('xf_user')->where<caret>('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
@@ -172,9 +150,7 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that deeply chained queries are still detected.
-     */
+    /** Test that deeply chained queries are still detected. */
     fun testDetectsDeeplyChainedQueries() {
         if (!isPhpPluginLoaded()) return
 
@@ -187,20 +163,18 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             	->orderBy('post_date', 'desc')
             	->limit(10)
             	->select<caret>('*');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
         assertNotNull("Should find method reference", method)
-        assertTrue(
-            "Should detect XenForo Builder in deep chain",
-            XenForoClassDetector.isXenForoQueryBuilder(method!!),
-        )
+        assertTrue("Should detect XenForo Builder in deep chain", XenForoClassDetector.isXenForoQueryBuilder(method!!))
     }
 
     /**
-     * Test detection through variable assignment.
-     * This is a common pattern: $query = \XF::query('table'); $query->method();
+     * Test detection through variable assignment. This is a common pattern: $query = \XF::query('table');
+     * $query->method();
      */
     fun testDetectsXenForoBuilderThroughVariableAssignment() {
         if (!isPhpPluginLoaded()) return
@@ -209,7 +183,8 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             """
             ${'$'}query = \XF::query('xf_user');
             ${'$'}query->where<caret>('user_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
@@ -220,9 +195,7 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test detection through variable with chained methods on assignment.
-     */
+    /** Test detection through variable with chained methods on assignment. */
     fun testDetectsXenForoBuilderThroughVariableWithChain() {
         if (!isPhpPluginLoaded()) return
 
@@ -230,7 +203,8 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             """
             ${'$'}query = \XF::query('xf_thread')->join('xf_user', 'xf_thread.user_id', '=', 'xf_user.user_id');
             ${'$'}query->select<caret>('title');
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
@@ -241,9 +215,7 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test that variable assignment to non-XenForo builder is rejected.
-     */
+    /** Test that variable assignment to non-XenForo builder is rejected. */
     fun testRejectsVariableWithNonXenForoBuilder() {
         if (!isPhpPluginLoaded()) return
 
@@ -255,7 +227,8 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             
             ${'$'}query = new OtherBuilder();
             ${'$'}query->where<caret>('test', 1);
-            """.trimIndent()
+            """
+                .trimIndent()
 
         configureByPhpText(phpCode)
 
@@ -267,9 +240,7 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test detection with variable assigned using table() method.
-     */
+    /** Test detection with variable assigned using table() method. */
     fun testDetectsXenForoBuilderThroughVariableWithTableMethod() {
         if (!isPhpPluginLoaded()) return
 
@@ -277,7 +248,8 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             """
             ${'$'}builder = \XF::query()->table('xf_node');
             ${'$'}builder->where<caret>('node_id', 1);
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
@@ -288,9 +260,7 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test detection inside a closure parameter.
-     */
+    /** Test detection inside a closure parameter. */
     fun testDetectsXenForoBuilderInsideClosureParameter() {
         if (!isPhpPluginLoaded()) return
 
@@ -300,7 +270,8 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             	->where(function (${'$'}query) {
             		${'$'}query->where<caret>('position', '>', 0);
             	});
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()
@@ -311,9 +282,7 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
         )
     }
 
-    /**
-     * Test detection inside nested closures.
-     */
+    /** Test detection inside nested closures. */
     fun testDetectsXenForoBuilderInsideNestedClosures() {
         if (!isPhpPluginLoaded()) return
 
@@ -326,7 +295,8 @@ class XenForoClassDetectorTest : XenForoQueryTestCase() {
             				${'$'}query->where<caret>('col2', 2);
             			});
             	});
-            """.trimIndent(),
+            """
+                .trimIndent()
         )
 
         val method = findMethodReferenceAtCaret()

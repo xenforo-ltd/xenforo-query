@@ -67,9 +67,10 @@ class ColumnCompletionProvider : CompletionProvider<CompletionParameters>() {
             }
         }
 
-        if (!isBuilderColumnAcceptingMethod(methodName) &&
-            !isBuilderMethodAcceptingColumnArguments(methodName) &&
-            !isBuilderColumnArrayMethod(methodName)
+        if (
+            !isBuilderColumnAcceptingMethod(methodName) &&
+                !isBuilderMethodAcceptingColumnArguments(methodName) &&
+                !isBuilderColumnArrayMethod(methodName)
         ) {
             return
         }

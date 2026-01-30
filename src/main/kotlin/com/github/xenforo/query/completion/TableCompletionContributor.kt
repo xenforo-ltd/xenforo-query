@@ -6,8 +6,7 @@ import com.intellij.patterns.PlatformPatterns
 import com.jetbrains.php.lang.lexer.PhpTokenTypes
 
 class TableCompletionContributor : CompletionContributor() {
-    init
-    {
+    init {
         extend(
             CompletionType.BASIC,
             PlatformPatterns.or(

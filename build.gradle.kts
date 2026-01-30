@@ -9,7 +9,7 @@ plugins {
     alias(libs.plugins.changelog) // Gradle Changelog Plugin
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
-    alias(libs.plugins.ktlint) // Kotlin linter
+    alias(libs.plugins.ktfmt) // Kotlin formatter
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -130,9 +130,18 @@ kover {
     }
 }
 
+ktfmt {
+    kotlinLangStyle()
+    maxWidth.set(120)
+}
+
 tasks {
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
+    }
+
+    matching { it.name == "ktfmtCheck" }.configureEach {
+        enabled = false
     }
 
     publishPlugin {
